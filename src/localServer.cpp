@@ -10,10 +10,10 @@ const int resetThreshold = 5;
 WiFiClient espClient;
 
 // Define the static IP addresses
-IPAddress local_IP(192, 168, 100, 100);    // Static IP address in STA mode
-IPAddress gateway(192, 168, 100, 100);         // Gateway IP address
+IPAddress local_IP(192, 168, 1, 148);    // Static IP address in STA mode
+IPAddress gateway(192, 168, 1, 1);         // Gateway IP address
 IPAddress subnet(255, 255, 255, 0);        // Subnet mask
-IPAddress ap_IP(192, 168, 100, 100);       // Static IP address in AP mode
+IPAddress ap_IP(192, 168, 1, 148);       // Static IP address in AP mode
 
 const int ledPin = 2;  // LED pin, change this according to your setup
 bool ledState = false;
