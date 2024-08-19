@@ -21,8 +21,21 @@ bool ledState = false;
 void toggleLED() {
   ledState = !ledState;
   digitalWrite(ledPin, ledState ? HIGH : LOW);
+  analogWrite(ledPin, ledState? 255 : 0);
+  Serial.println(ledState ? "LED is ON" : "LED is OFF");
   server.send(200, "text/plain", ledState ? "LED is ON" : "LED is OFF");
 }
+void setBrightness() {
+  if (server.hasArg("value")) {
+    int brightness = server.arg("value").toInt();
+    analogWrite(ledPin, brightness);  // Set LED brightness
+    server.send(200, "text/plain", "Brightness set to " + String(brightness));
+    Serial.println(brightness);
+  } else {
+    server.send(400, "text/plain", "Bad Request: No value provided");
+  }
+}
+
 
 void startWebServer() {
   server.on("/", HTTP_GET, []() {
@@ -41,8 +54,11 @@ void startWebServer() {
 
     server.send(200, "text/html", htmlContent);
   });
+  // Define web routes
+  server.on("/toggleLED", toggleLED);
+  server.on("/setBrightness", setBrightness);
 
-  server.on("/toggleLED", HTTP_GET, toggleLED);
+  // server.on("/toggleLED", HTTP_GET, toggleLED);
 
   server.on("/scan", HTTP_GET, []() {
     int n = WiFi.scanNetworks();
@@ -76,6 +92,7 @@ void startWebServer() {
 
   server.begin();
   Serial.println("HTTP server started");
+  
 }
 
 void startAPMode() {

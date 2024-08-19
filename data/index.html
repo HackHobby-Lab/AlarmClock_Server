@@ -73,8 +73,18 @@
       fetch('/toggleLED')
         .then(response => response.text())
         .then(data => {
+          console.log('Led Status:', data);
           // alert(data);
         });
+    }
+
+    function changeLEDBrightness(value) {
+      fetch(`/setBrightness?value=${value}`)
+        .then(response => response.text())
+        .then(data => {
+          console.log('Brightness set to:', value);
+        })
+        .catch(error => console.error('Error:', error));
     }
 
     window.onload = function() {
@@ -110,10 +120,12 @@
     <p>IP Address: <span id="ipAddress">N/A</span></p>
   </div>
 
-  <!-- LED Control Section -->
-  <div id="ledControl" class="content hidden">
+   <!-- LED Control Section -->
+   <div id="ledControl" class="content hidden">
     <h2>On-Board LED Control</h2>
-    <button onclick="toggleLED()">Toggle LED</button>
+    <button onclick="toggleLED()">Toggle LED</button><br><br>
+    <label for="brightness">Brightness:</label><br>
+    <input type="range" id="brightness" name="brightness" min="0" max="255" oninput="changeLEDBrightness(this.value)">
   </div>
 
 </body>
