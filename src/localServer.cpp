@@ -37,12 +37,23 @@ void setBrightness() {
 }
 
 void setDateTime() {
-  if(server.hasArg("value")){
-    int dateTime = server.arg("value").toInt();
-    Serial.println("Time and Date");
-    Serial.println(dateTime);
+  if (server.hasArg("date") && server.hasArg("time")) {
+    String date = server.arg("date");
+    String time = server.arg("time");
+    // String ampm = server.hasArg("ampm") ? server.arg("ampm") : ""; // Use this if you're handling AM/PM
+
+    // Log the received date and time
+    Serial.println("Received Date: " + date);
+    Serial.println("Received Time: " + time);
+    // Serial.println("AM/PM: " + ampm); // Uncomment if handling AM/PM
+
+    // Send a success response to the client
+    server.send(200, "text/plain", "Date and Time set to: " + date + " " + time /* + " " + ampm */);
+  } else {
+    server.send(400, "text/plain", "Bad Request: Date or Time not provided");
   }
 }
+
 
 
 void startWebServer() {
