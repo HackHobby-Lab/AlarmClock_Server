@@ -36,6 +36,14 @@ void setBrightness() {
   }
 }
 
+void setDateTime() {
+  if(server.hasArg("value")){
+    int dateTime = server.arg("value").toInt();
+    Serial.println("Time and Date");
+    Serial.println(dateTime);
+  }
+}
+
 
 void startWebServer() {
   server.on("/", HTTP_GET, []() {
@@ -57,6 +65,8 @@ void startWebServer() {
   // Define web routes
   server.on("/toggleLED", toggleLED);
   server.on("/setBrightness", setBrightness);
+  server.on("/setDateTime", setDateTime);
+
 
   // server.on("/toggleLED", HTTP_GET, toggleLED);
 

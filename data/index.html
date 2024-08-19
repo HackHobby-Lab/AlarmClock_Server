@@ -12,11 +12,19 @@
     function showWiFiSettings() {
       document.getElementById('wifiSettings').classList.remove('hidden');
       document.getElementById('ledControl').classList.add('hidden');
+      document.getElementById('dateTimeSettings').classList.add('hidden');
     }
 
     function showLEDControl() {
       document.getElementById('ledControl').classList.remove('hidden');
       document.getElementById('wifiSettings').classList.add('hidden');
+      document.getElementById('dateTimeSettings').classList.add('hidden');
+    }
+
+    function showDateTimeSettings() {
+      document.getElementById('dateTimeSettings').classList.remove('hidden');
+      document.getElementById('wifiSettings').classList.add('hidden');
+      document.getElementById('ledControl').classList. add('hidden');
     }
 
     function scanNetworks() {
@@ -87,6 +95,24 @@
         .catch(error => console.error('Error:', error));
     }
 
+
+    function setDateTime() {
+      let date = document.getElementById('date').value;
+      let time = document.getElementById('time').value;
+      let ampm = document.getElementById('input[name="ampm"]:checked').value;
+
+      fetch('/setDateTime', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&ampm=${encodeURIComponent(ampm)}`
+      })
+      .then(response => response.text())
+      .then(data => alert(data))
+      .catch(error => console.error('Error:', error));
+    }
+
     window.onload = function() {
       fetchWiFiStatus();  // Fetch and display the current Wi-Fi status on load
       scanNetworks();     // Scan networks when the page loads
@@ -100,6 +126,8 @@
   <div>
     <button onclick="showWiFiSettings()">Wi-Fi Settings</button>
     <button onclick="showLEDControl()">LED Control</button>
+    <button onclick="showDateTimeSettings()">Date & Time Settings</button>
+
   </div>
 
   <!-- Wi-Fi Settings Section -->
@@ -127,6 +155,25 @@
     <label for="brightness">Brightness:</label><br>
     <input type="range" id="brightness" name="brightness" min="0" max="255" oninput="changeLEDBrightness(this.value)">
   </div>
+
+  <!-- Date and Time Settings Section -->
+  <div id="dateTimeSettings" class="content hidden">
+    <h2>Date & Time Settings</h2>
+    <form onsubmit="setDateTime(); return false;">
+      <label for="date">Date:</label><br>
+      <input type="date" id="date" name="date"><br><br>
+      
+      <label for="time">Time:</label><br>
+      <input type="time" id="time" name="time"><br><br>
+      
+      <label for="ampm">AM/PM:</label><br>
+      <input type="radio" id="am" name="ampm" value="AM" checked> AM
+      <input type="radio" id="pm" name="ampm" value="PM"> PM<br><br>
+      
+      <input type="submit" value="Set Date & Time">
+    </form>
+  </div>
+
 
 </body>
 </html>
