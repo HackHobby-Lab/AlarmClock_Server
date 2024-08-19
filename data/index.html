@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 Control Panel</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    button { padding: 10px 20px; font-size: 16px; margin: 10px; }
+    .content { margin-top: 20px; }
+    .hidden { display: none; }
+  </style>
+  <script>
+    function showWiFiSettings() {
+      document.getElementById('wifiSettings').classList.remove('hidden');
+      document.getElementById('ledControl').classList.add('hidden');
+    }
+
+    function showLEDControl() {
+      document.getElementById('ledControl').classList.remove('hidden');
+      document.getElementById('wifiSettings').classList.add('hidden');
+    }
+
+    function scanNetworks() {
+      fetch('/scan')
+        .then(response => response.json())
+        .then(data => {
+          let dropdown = document.getElementById('ssidSelect');
+          dropdown.length = 0;
+          let defaultOption = document.createElement('option');
+          defaultOption.text = 'Select a network';
+          dropdown.add(defaultOption);
+          data.forEach(ssid => {
+            let option = document.createElement('option');
+            option.text = ssid;
+            option.value = ssid;
+            dropdown.add(option);
+          });
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function updateSSIDField() {
+      let selectedSSID = document.getElementById('ssidSelect').value;
+      document.getElementById('ssid').value = selectedSSID;
+    }
+
+    function connectToNetwork() {
+      let ssid = document.getElementById('ssid').value;
+      let pass = document.getElementById('pass').value;
+
+      fetch('/setWiFi', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `ssid=${encodeURIComponent(ssid)}&pass=${encodeURIComponent(pass)}`
+      })
+      .then(response => response.text())
+      .then(data => alert(data))
+      .catch(error => console.error('Error:', error));
+    }
+
+    function fetchWiFiStatus() {
+      fetch('/wifiStatus')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('connectedNetwork').textContent = data.ssid;
+          document.getElementById('ipAddress').textContent = data.ip;
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function toggleLED() {
+      fetch('/toggleLED')
+        .then(response => response.text())
+        .then(data => {
+          alert(data);
+        });
+    }
+
+    window.onload = function() {
+      fetchWiFiStatus();  // Fetch and display the current Wi-Fi status on load
+      scanNetworks();     // Scan networks when the page loads
+    };
+  </script>
+</head>
+<body>
+  <h1>ESP32 Control Panel</h1>
+
+  <!-- Buttons for navigating between Wi-Fi settings and LED control -->
+  <div>
+    <button onclick="showWiFiSettings()">Wi-Fi Settings</button>
+    <button onclick="showLEDControl()">LED Control</button>
+  </div>
+
+  <!-- Wi-Fi Settings Section -->
+  <div id="wifiSettings" class="content hidden">
+    <h2>Wi-Fi Configuration</h2>
+    <form onsubmit="connectToNetwork(); return false;">
+      <label for="ssid">SSID:</label><br>
+      <select id="ssidSelect" name="ssidSelect" onchange="updateSSIDField()">
+        <option>Select a network</option>
+      </select><br><br>
+      <input type="text" id="ssid" name="ssid" placeholder="Or enter SSID manually"><br><br>
+      <label for="pass">Password:</label><br>
+      <input type="password" id="pass" name="pass"><br><br>
+      <input type="submit" value="Connect">
+    </form>
+    <h2>Current Wi-Fi Status</h2>
+    <p>Connected Network: <span id="connectedNetwork">Not connected</span></p>
+    <p>IP Address: <span id="ipAddress">N/A</span></p>
+  </div>
+
+  <!-- LED Control Section -->
+  <div id="ledControl" class="content hidden">
+    <h2>On-Board LED Control</h2>
+    <button onclick="toggleLED()">Toggle LED</button>
+  </div>
+
+</body>
+</html>
