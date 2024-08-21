@@ -41,7 +41,9 @@ void setDateTime() {
     String date = server.arg("date");
     String time = server.arg("time");
     // String ampm = server.hasArg("ampm") ? server.arg("ampm") : ""; // Use this if you're handling AM/PM
-
+    // String ampm = server.hasArg("ampm") ? server.arg("ampm") : "";
+    // String amData = server.hasArg("data") ? server.arg("time") : "" ; // amData
+    // String pmData = server.hasArg("time") ? server.arg("time") : "";  //pmData
     // Log the received date and time
     Serial.println("Received Date: " + date);
     Serial.println("Received Time: " + time);
