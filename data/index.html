@@ -15,18 +15,28 @@
       document.getElementById('wifiSettings').classList.remove('hidden');
       document.getElementById('ledControl').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.add('hidden');
+      document.getElementById('alarmSettings').classList.add('hidden');
     }
 
     function showLEDControl() {
       document.getElementById('ledControl').classList.remove('hidden');
       document.getElementById('wifiSettings').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.add('hidden');
+      document.getElementById('alarmSettings').classList.add('hidden');
     }
 
     function showDateTimeSettings() {
       document.getElementById('dateTimeSettings').classList.remove('hidden');
       document.getElementById('wifiSettings').classList.add('hidden');
-      document.getElementById('ledControl').classList. add('hidden');
+      document.getElementById('ledControl').classList.add('hidden');
+      document.getElementById('alarmSettings').classList.add('hidden');
+    }
+
+    function showAlarmSettings() {
+      document.getElementById('alarmSettings').classList.remove('hidden');
+      document.getElementById('wifiSettings').classList.add('hidden');
+      document.getElementById('ledControl').classList.add('hidden');
+      document.getElementById('dateTimeSettings').classList.add('hidden');
     }
 
     function scanNetworks() {
@@ -84,7 +94,6 @@
         .then(response => response.text())
         .then(data => {
           console.log('Led Status:', data);
-          // alert(data);
         });
     }
 
@@ -97,42 +106,57 @@
         .catch(error => console.error('Error:', error));
     }
 
-
     function setDateTime(event) {
-  event.preventDefault(); // Prevent the form from reloading the page
+      event.preventDefault();
 
-  let date = document.getElementById('date').value;
-  let time = document.getElementById('time').value;
+      let date = document.getElementById('date').value;
+      let time = document.getElementById('time').value;
 
-  fetch('/setDateTime', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: `date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`
-  })
-  .then(response => response.text())
-  .then(data => alert(data))
-  .catch(error => console.error('Error:', error));
-}
+      fetch('/setDateTime', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`
+      })
+      .then(response => response.text())
+      .then(data => alert(data))
+      .catch(error => console.error('Error:', error));
+    }
 
+    function setAlarm(event) {
+      event.preventDefault();
 
+      let alarmDate = document.getElementById('alarmDate').value;
+      let alarmTime = document.getElementById('alarmTime').value;
+
+      fetch('/setAlarm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `alarmDate=${encodeURIComponent(alarmDate)}&alarmTime=${encodeURIComponent(alarmTime)}`
+      })
+      .then(response => response.text())
+      .then(data => alert(data))
+      .catch(error => console.error('Error:', error));
+    }
 
     window.onload = function() {
-      fetchWiFiStatus();  // Fetch and display the current Wi-Fi status on load
-      scanNetworks();     // Scan networks when the page loads
+      fetchWiFiStatus();
+      scanNetworks();
     };
   </script>
 </head>
 <body>
   <h1>ESP32 Control Panel</h1>
 
-  <!-- Buttons for navigating between Wi-Fi settings and LED control -->
+  <!-- Buttons for navigating between settings -->
   <div>
     <button onclick="showWiFiSettings()">Wi-Fi Settings</button>
     <button onclick="showLEDControl()">LED Control</button>
     <button onclick="showDateTimeSettings()">Date & Time Settings</button>
-
+    <button onclick="showAlarmSettings()">Alarm Settings</button>
   </div>
 
   <!-- Wi-Fi Settings Section -->
@@ -153,8 +177,8 @@
     <p>IP Address: <span id="ipAddress">N/A</span></p>
   </div>
 
-   <!-- LED Control Section -->
-   <div id="ledControl" class="content hidden">
+  <!-- LED Control Section -->
+  <div id="ledControl" class="content hidden">
     <h2>On-Board LED Control</h2>
     <button onclick="toggleLED()">Toggle LED</button><br><br>
     <label for="brightness">Brightness:</label><br>
@@ -173,16 +197,21 @@
       
       <input type="submit" value="Set Date & Time">
     </form>
-    
-      
-      <!-- <label for="ampm">AM/PM:</label><br>
-      <input type="radio" id="am" name="ampm" value="AM" checked> AM
-      <input type="radio" id="pm" name="ampm" value="PM"> PM<br><br> -->
-      
-      <!-- <input type="submit" value="Set Date & Time">
-    </form> -->
   </div>
 
+  <!-- Alarm Settings Section -->
+  <div id="alarmSettings" class="content hidden">
+    <h2>Alarm Settings</h2>
+    <form onsubmit="setAlarm(event); return false;">
+      <label for="alarmDate">Date:</label><br>
+      <input type="date" id="alarmDate" name="alarmDate"><br><br>
+      
+      <label for="alarmTime">Time:</label><br>
+      <input type="time" id="alarmTime" name="alarmTime"><br><br>
+      
+      <input type="submit" value="Set Alarm">
+    </form>
+  </div>
 
 </body>
 </html>
