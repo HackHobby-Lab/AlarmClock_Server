@@ -9,8 +9,12 @@
     button { padding: 10px 20px; font-size: 16px; margin: 10px; }
     .content { margin-top: 20px; }
     .hidden { display: none; }
+    .alarm-list { list-style-type: none; padding: 0; }
+    .alarm-list li { margin: 10px 0; }
   </style>
   <script>
+    let alarms = [];
+
     function showWiFiSettings() {
       document.getElementById('wifiSettings').classList.remove('hidden');
       document.getElementById('ledControl').classList.add('hidden');
@@ -93,7 +97,7 @@
       fetch('/toggleLED')
         .then(response => response.text())
         .then(data => {
-          console.log('Led Status:', data);
+          console.log('LED Status:', data);
         });
     }
 
@@ -124,13 +128,18 @@
       .catch(error => console.error('Error:', error));
     }
 
-    function setAlarm(event) {
+    function addAlarm(event) {
       event.preventDefault();
 
       let alarmDate = document.getElementById('alarmDate').value;
       let alarmTime = document.getElementById('alarmTime').value;
+      let alarmId = Date.now();
 
-      fetch('/setAlarm', {
+      let alarm = { id: alarmId, date: alarmDate, time: alarmTime };
+      alarms.push(alarm);
+      updateAlarmList();
+
+      fetch('/addAlarm', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -140,6 +149,37 @@
       .then(response => response.text())
       .then(data => alert(data))
       .catch(error => console.error('Error:', error));
+    }
+
+    function deleteAlarm(alarmId) {
+      alarms = alarms.filter(alarm => alarm.id !== alarmId);
+      updateAlarmList();
+
+      fetch('/deleteAlarm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `alarmId=${encodeURIComponent(alarmId)}`
+      })
+      .then(response => response.text())
+      .then(data => alert(data))
+      .catch(error => console.error('Error:', error));
+    }
+
+    function updateAlarmList() {
+      let alarmList = document.getElementById('alarmList');
+      alarmList.innerHTML = '';
+
+      alarms.forEach(alarm => {
+        let listItem = document.createElement('li');
+        listItem.textContent = `${alarm.date} ${alarm.time}`;
+        let deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.onclick = () => deleteAlarm(alarm.id);
+        listItem.appendChild(deleteButton);
+        alarmList.appendChild(listItem);
+      });
     }
 
     window.onload = function() {
@@ -202,16 +242,20 @@
   <!-- Alarm Settings Section -->
   <div id="alarmSettings" class="content hidden">
     <h2>Alarm Settings</h2>
-    <form onsubmit="setAlarm(event); return false;">
-      <label for="alarmDate">Date:</label><br>
+    <form onsubmit="addAlarm(event); return false;">
+      <label for="alarmDate">Alarm Date:</label><br>
       <input type="date" id="alarmDate" name="alarmDate"><br><br>
       
-      <label for="alarmTime">Time:</label><br>
+      <label for="alarmTime">Alarm Time:</label><br>
       <input type="time" id="alarmTime" name="alarmTime"><br><br>
       
-      <input type="submit" value="Set Alarm">
+      <input type="submit" value="Add Alarm">
     </form>
-  </div>
 
+    <h2>Set Alarms</h2>
+    <ul id="alarmList" class="alarm-list">
+      <!-- Alarms will be dynamically added here -->
+    </ul>
+  </div>
 </body>
 </html>
