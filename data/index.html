@@ -16,9 +16,9 @@
     let alarms = [];
 
     function showWiFiSettings() {
+      document.getElementById('dateTimeSettings').classList.remove('hidden');
       document.getElementById('wifiSettings').classList.remove('hidden');
       document.getElementById('ledControl').classList.add('hidden');
-      document.getElementById('dateTimeSettings').classList.add('hidden');
       document.getElementById('alarmSettings').classList.add('hidden');
     }
 
@@ -29,12 +29,13 @@
       document.getElementById('alarmSettings').classList.add('hidden');
     }
 
-    function showDateTimeSettings() {
-      document.getElementById('dateTimeSettings').classList.remove('hidden');
-      document.getElementById('wifiSettings').classList.add('hidden');
-      document.getElementById('ledControl').classList.add('hidden');
-      document.getElementById('alarmSettings').classList.add('hidden');
-    }
+    // function showDateTimeSettings() {
+    //   document.getElementById('wifiSettings').classList.remove('hidden');
+    //   document.getElementById('dateTimeSettings').classList.remove('hidden');
+      
+    //   document.getElementById('ledControl').classList.add('hidden');
+    //   document.getElementById('alarmSettings').classList.add('hidden');
+    // }
 
     function showAlarmSettings() {
       document.getElementById('alarmSettings').classList.remove('hidden');
@@ -128,28 +129,41 @@
       .catch(error => console.error('Error:', error));
     }
 
-    function addAlarm(event) {
-      event.preventDefault();
 
-      let alarmDate = document.getElementById('alarmDate').value;
-      let alarmTime = document.getElementById('alarmTime').value;
-      let alarmId = Date.now();
+function addAlarm(event) {
+  event.preventDefault();
 
-      let alarm = { id: alarmId, date: alarmDate, time: alarmTime };
-      alarms.push(alarm);
-      updateAlarmList();
+  let alarmTime = document.getElementById('alarmTime').value;
+  let alarmId = Date.now();
 
-      fetch('/addAlarm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `alarmDate=${encodeURIComponent(alarmDate)}&alarmTime=${encodeURIComponent(alarmTime)}`
-      })
-      .then(response => response.text())
-      .then(data => alert(data))
-      .catch(error => console.error('Error:', error));
-    }
+  let alarm = { id: alarmId, time: `${alarmTime}` };
+  //alarms.push(alarm);
+
+  fetch('/addAlarm', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `alarmTime=${encodeURIComponent(alarmTime)}`
+  })
+  .then(response => response.text())
+  .then(data => alert(data))
+  .catch(error => console.error('Error:', error));
+}
+
+
+function showCurrentTime() {
+  const now = new Date();
+  const hours = now.getHours() % 12 || 12; // Convert 24-hour format to 12-hour
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const amPm = now.getHours() >= 12 ? 'PM' : 'AM';
+
+  const currentTime = `${hours}:${minutes} ${amPm}`;
+  document.getElementById('currentTime').innerText = `Current Time: ${currentTime}`;
+}
+
+setInterval(showCurrentTime, 1000); // Update time every second
+
 
     function deleteAlarm(alarmId) {
       alarms = alarms.filter(alarm => alarm.id !== alarmId);
@@ -173,7 +187,7 @@
 
       alarms.forEach(alarm => {
         let listItem = document.createElement('li');
-        listItem.textContent = `${alarm.date} ${alarm.time}`;
+        listItem.textContent = `${alarm.time}`;
         let deleteButton = document.createElement('button');
         deleteButton.textContent = 'Delete';
         deleteButton.onclick = () => deleteAlarm(alarm.id);
@@ -193,11 +207,26 @@
 
   <!-- Buttons for navigating between settings -->
   <div>
-    <button onclick="showWiFiSettings()">Wi-Fi Settings</button>
+    <button onclick="showWiFiSettings()">System Settings</button>
     <button onclick="showLEDControl()">LED Control</button>
-    <button onclick="showDateTimeSettings()">Date & Time Settings</button>
+    <!-- <button onclick="showDateTimeSettings()">Date & Time Settings</button> -->
     <button onclick="showAlarmSettings()">Alarm Settings</button>
   </div>
+
+
+    <!-- Date and Time Settings Section -->
+    <div id="dateTimeSettings" class="content hidden">
+      <h2>Date & Time Settings</h2>
+      <form onsubmit="setDateTime(event); return false;">
+        <label for="date">Date:</label><br>
+        <input type="date" id="date" name="date"><br><br>
+        
+        <label for="time">Time:</label><br>
+        <input type="time" id="time" name="time"><br><br>
+        
+        <input type="submit" value="Set Date & Time">
+      </form>
+    </div>
 
   <!-- Wi-Fi Settings Section -->
   <div id="wifiSettings" class="content hidden">
@@ -225,37 +254,17 @@
     <input type="range" id="brightness" name="brightness" min="0" max="255" oninput="changeLEDBrightness(this.value)">
   </div>
 
-  <!-- Date and Time Settings Section -->
-  <div id="dateTimeSettings" class="content hidden">
-    <h2>Date & Time Settings</h2>
-    <form onsubmit="setDateTime(event); return false;">
-      <label for="date">Date:</label><br>
-      <input type="date" id="date" name="date"><br><br>
-      
-      <label for="time">Time:</label><br>
-      <input type="time" id="time" name="time"><br><br>
-      
-      <input type="submit" value="Set Date & Time">
-    </form>
-  </div>
 
-  <!-- Alarm Settings Section -->
-  <div id="alarmSettings" class="content hidden">
-    <h2>Alarm Settings</h2>
-    <form onsubmit="addAlarm(event); return false;">
-      <label for="alarmDate">Alarm Date:</label><br>
-      <input type="date" id="alarmDate" name="alarmDate"><br><br>
-      
-      <label for="alarmTime">Alarm Time:</label><br>
-      <input type="time" id="alarmTime" name="alarmTime"><br><br>
-      
-      <input type="submit" value="Add Alarm">
-    </form>
+  <div id="currentTime"></div>
 
-    <h2>Set Alarms</h2>
-    <ul id="alarmList" class="alarm-list">
-      <!-- Alarms will be dynamically added here -->
-    </ul>
-  </div>
+  <form onsubmit="addAlarm(event)">
+    <label for="alarmTime">Select Time:</label>
+    <input type="time" id="alarmTime" required>
+  
+
+  
+    <button type="submit">Set Alarm</button>
+  </form>
+  
 </body>
 </html>

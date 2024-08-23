@@ -37,17 +37,20 @@ void setBrightness() {
 }
 
 void setAlarm(){
-  if(server.hasArg("value")){
-    int alarmDate = server.arg("alarmDate").toInt();
-    int alarmTime = server.arg("alarmTime").toInt();
+  if(server.hasArg("alarmTime")){
+    String alarmTime = server.arg("alarmTime");
 
-    Serial.println("Alarm Date: " + alarmDate);
     Serial.println("Alarm Time: " + alarmTime);
 
-    server.send(200, "text/plain", "Alarm Date and Time set to: " + alarmDate + alarmTime);
+    server.send(200, "text/plain", "Alarm Time set to: " + alarmTime);
   }
   else {
     server.send(400, "text/plain", "Bad Request: Alarm Date not Provided");
+  }
+}
+void setAmPm(){
+  if(server.hasArg("amPmValue")){
+    Serial.println("AM/PM");
   }
 }
 
@@ -94,7 +97,8 @@ void startWebServer() {
   server.on("/toggleLED", toggleLED);
   server.on("/setBrightness", setBrightness);
   server.on("/setDateTime", setDateTime);
-  server.on("/setAlarm", setAlarm);
+  server.on("/addAlarm", setAlarm);
+  server.on("/amPmValue", setAmPm);
 
 
   // server.on("/toggleLED", HTTP_GET, toggleLED);
