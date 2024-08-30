@@ -25,6 +25,7 @@ void toggleLED() {
   Serial.println(ledState ? "LED is ON" : "LED is OFF");
   server.send(200, "text/plain", ledState ? "LED is ON" : "LED is OFF");
 }
+
 void setBrightness() {
   if (server.hasArg("value")) {
     int brightness = server.arg("value").toInt();
@@ -48,6 +49,7 @@ void setAlarm(){
     server.send(400, "text/plain", "Bad Request: Alarm Date not Provided");
   }
 }
+
 void setAmPm(){
   if(server.hasArg("amPmValue")){
     Serial.println("AM/PM");
@@ -74,15 +76,10 @@ void setDateTime() {
   }
 }
 
-
 void changeVolume(){
- 
   String volume = server.arg("volume");
   Serial.println(volume);
-  
   server.send(200, "text/plain", "Volume set to " + volume);
-
-
 }
 
 void startWebServer() {
@@ -144,7 +141,6 @@ void startWebServer() {
 
   server.begin();
   Serial.println("HTTP server started");
-  
 }
 
 void startAPMode() {
