@@ -82,6 +82,48 @@ void changeVolume(){
   server.send(200, "text/plain", "Volume set to " + volume);
 }
 
+void setWakeupSound() {
+  String sound = server.arg("sound");
+  Serial.println("Selected Wake-up Sound: " + sound);
+  server.send(200, "text/plain", "Wake-up sound set to " + sound);
+}
+
+// Function to handle the preview of the wake-up sound
+void previewWakeupSound() {
+  if (server.hasArg("sound")) {
+    String sound = server.arg("sound");
+    Serial.println("Previewing Wake-up Sound: " + sound);
+
+    // Here you would add the code to actually play the sound using your hardware
+    // For example, playSound(sound);  // This function would be defined to play the sound
+
+    server.send(200, "text/plain", "Previewing sound " + sound);
+  } else {
+    server.send(400, "text/plain", "Bad Request: 'sound' argument missing");
+  }
+}
+
+void setSleepSound() {
+  String sound = server.arg("sound");
+  Serial.println("Selected Sleep Sound: " + sound);
+  server.send(200, "text/plain", "Sleep sound set to " + sound);
+}
+
+// Function to handle the preview of the Sleep sound
+void previewSleepSound() {
+  if (server.hasArg("sound")) {
+    String sound = server.arg("sound");
+    Serial.println("Previewing Sleep Sound: " + sound);
+
+    // Here you would add the code to actually play the sound using your hardware
+    // For example, playSound(sound);  // This function would be defined to play the sound
+
+    server.send(200, "text/plain", "Previewing sound " + sound);
+  } else {
+    server.send(400, "text/plain", "Bad Request: 'sound' argument missing");
+  }
+}
+
 void startWebServer() {
   server.on("/", HTTP_GET, []() {
     File file = SPIFFS.open("/index.html", "r");
@@ -106,6 +148,10 @@ void startWebServer() {
   server.on("/addAlarm", setAlarm);
   server.on("/amPmValue", setAmPm);
   server.on("/changeVolume", changeVolume);
+  server.on("/setWakeupSound", setWakeupSound);
+  server.on("/previewWakeupSound", HTTP_POST, previewWakeupSound);
+  server.on("/setSleepSound", setSleepSound); 
+  server.on("/previewSleepSound", HTTP_POST, previewSleepSound);
 
   // server.on("/toggleLED", HTTP_GET, toggleLED);
 

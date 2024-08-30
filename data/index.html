@@ -191,7 +191,7 @@
         .catch(error => console.error('Error:', error));
     }
 
-    // Function to change the wake-up sound volume
+    // Function to change the wake-up and sleep sound volume
     function changeVolume(value) {
       fetch('/changeVolume', {
         method: 'POST',
@@ -205,11 +205,18 @@
         .catch(error => console.error('Error changing volume:', error));
     }
 
+    function sendWakeupSound() {
+    const sound = document.getElementById("wakeupSoundSelect").value;
+    fetch(`/setWakeupSound?sound=${sound}`)
+        .then(response => response.text())
+        .then(data => console.log(data));
+    }
+
     // Function to preview the selected wake-up sound
     function previewWakeupSound() {
       let selectedSound = document.getElementById('wakeupSoundSelect').value;
 
-      fetch('/previewSound', {
+      fetch('/previewWakeupSound', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -220,6 +227,30 @@
         .then(data => console.log('Previewing sound:', data))
         .catch(error => console.error('Error previewing sound:', error));
     }
+    
+    function sendSleepSound() {
+    const sound = document.getElementById("sleepSoundSelect").value;
+    fetch(`/setSleepSound?sound=${sound}`)
+        .then(response => response.text())
+        .then(data => console.log(data));
+    }
+
+    // Function to preview the selected sleep sound
+    function previewSleepSound() {
+      let selectedSound = document.getElementById('sleepSoundSelect').value;
+
+      fetch('/previewSleepSound', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `sound=${encodeURIComponent(selectedSound)}`
+      })
+        .then(response => response.text())
+        .then(data => console.log('Previewing sound:', data))
+        .catch(error => console.error('Error previewing sound:', error));
+    }
+
     function addAlarm(event) {
       event.preventDefault();
 
@@ -241,7 +272,6 @@
         .catch(error => console.error('Error:', error));
     }
 
-
     function showCurrentTime() {
       const now = new Date();
       const hours = now.getHours() % 12 || 12; // Convert 24-hour format to 12-hour
@@ -253,7 +283,6 @@
     }
 
     setInterval(showCurrentTime, 1000); // Update time every second
-
 
     function deleteAlarm(alarmId) {
       alarms = alarms.filter(alarm => alarm.id !== alarmId);
@@ -349,8 +378,6 @@
     <input type="range" id="brightness" name="brightness" min="0" max="255" oninput="changeLEDBrightness(this.value)">
   </div>
 
-
-
   <div id="alarmSettings" class="content hidden">
     <div id="currentTime"></div>
     <form onsubmit="addAlarm(event)">
@@ -360,14 +387,11 @@
     </form>
   </div>
 
-
-
   <!-- Wake-up Sound Section -->
   <div id="wakeupSound" class="content hidden">
     <h2>Wake-up Sound</h2>
-    <button onclick="toggleLED()">Toggle LED</button><br><br>
     <label for="wakeupSoundSelect">Choose a sound:</label>
-    <select id="wakeupSoundSelect" name="wakeupSound">
+    <select id="wakeupSoundSelect" name="wakeupSound" onchange="sendWakeupSound()">
       <option value="alarm1">Alarm tone 1</option>
       <option value="alarm2">Alarm tone 2</option>
       <option value="alarm3">Alarm tone 3</option>
@@ -384,7 +408,7 @@
     <h2>Sleep Sound</h2>
     <p>(Streaming from URL)</p>
     <label for="sleepSoundSelect">Choose a sound:</label>
-    <select id="sleepSoundSelect" name="sleepSound">
+    <select id="sleepSoundSelect" name="sleepSound" onchange="sendSleepSound()">
       <option value="rain">Rain</option>
       <option value="ocean">Ocean</option>
       <option value="forest">Forest</option>
