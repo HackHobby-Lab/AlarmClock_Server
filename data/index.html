@@ -191,19 +191,19 @@
         .catch(error => console.error('Error:', error));
     }
 
-    // Function to change the wake-up sound volume
-    function changeVolume(value) {
-      fetch('/changeVolume', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `volume=${encodeURIComponent(value)}`
-      })
-        .then(response => response.text())
-        .then(data => console.log('Volume set to:', data))
-        .catch(error => console.error('Error changing volume:', error));
-    }
+    // // Function to change the wake-up sound volume
+    // function changeVolume(value) {
+    //   fetch('/changeVolume', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/x-www-form-urlencoded',
+    //     },
+    //     body: `volume=${encodeURIComponent(value)}`
+    //   })
+    //     .then(response => response.text())
+    //     .then(data => console.log('Volume set to:', data))
+    //     .catch(error => console.error('Error changing volume:', error));
+    // }
 
     // Function to preview the selected wake-up sound
     function previewWakeupSound() {
