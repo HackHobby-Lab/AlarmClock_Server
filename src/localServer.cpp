@@ -76,14 +76,12 @@ void setDateTime() {
 
 
 void changeVolume(){
-   if (server.hasArg("data")) {
-    // int volume = server.arg("data").toInt();
-    // //analogWrite(ledPin, volume);  // Set LED brightness
-    // server.send(200, "text/plain", "Volume set to " + String(volume));
-    Serial.println("volume");
-  // } else {
-  //   server.send(400, "text/plain", "Bad Request: No value provided");
-  }
+ 
+  String volume = server.arg("volume");
+  Serial.println(volume);
+  
+  server.send(200, "text/plain", "Volume set to " + volume);
+
 
 }
 
