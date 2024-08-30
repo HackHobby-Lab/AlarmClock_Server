@@ -20,6 +20,9 @@
       document.getElementById('wifiSettings').classList.remove('hidden');
       document.getElementById('ledControl').classList.add('hidden');
       document.getElementById('alarmSettings').classList.add('hidden');
+      document.getElementById('sleepSound').classList.add('hidden');
+      document.getElementById('wakeupSound').classList.add('hidden');
+      document.getElementById('phillipsHue').classList.add('hidden');
     }
 
     function showLEDControl() {
@@ -27,6 +30,9 @@
       document.getElementById('wifiSettings').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.add('hidden');
       document.getElementById('alarmSettings').classList.add('hidden');
+      document.getElementById('sleepSound').classList.add('hidden');
+      document.getElementById('wakeupSound').classList.add('hidden');
+      document.getElementById('phillipsHue').classList.add('hidden');
     }
 
     // function showDateTimeSettings() {
@@ -42,6 +48,39 @@
       document.getElementById('wifiSettings').classList.add('hidden');
       document.getElementById('ledControl').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.add('hidden');
+      document.getElementById('sleepSound').classList.add('hidden');
+      document.getElementById('wakeupSound').classList.add('hidden');
+      document.getElementById('phillipsHue').classList.add('hidden');
+    }
+
+    function showWakeupSound() {
+      document.getElementById('wifiSettings').classList.add('hidden');
+      document.getElementById('ledControl').classList.add('hidden');
+      document.getElementById('alarmSettings').classList.add('hidden');
+      document.getElementById('wakeupSound').classList.remove('hidden');
+      document.getElementById('sleepSound').classList.add('hidden');
+      document.getElementById('phillipsHue').classList.add('hidden');
+      document.getElementById('dateTimeSettings').classList.add('hidden');
+    }
+
+    function showSleepSound() {
+      document.getElementById('wifiSettings').classList.add('hidden');
+      document.getElementById('ledControl').classList.add('hidden');
+      document.getElementById('alarmSettings').classList.add('hidden');
+      document.getElementById('wakeupSound').classList.add('hidden');
+      document.getElementById('sleepSound').classList.remove('hidden');
+      document.getElementById('phillipsHue').classList.add('hidden');
+      document.getElementById('dateTimeSettings').classList.add('hidden');
+    }
+
+    function showPhillipsHue() {
+      document.getElementById('wifiSettings').classList.add('hidden');
+      document.getElementById('ledControl').classList.add('hidden');
+      document.getElementById('alarmSettings').classList.add('hidden');
+      document.getElementById('wakeupSound').classList.add('hidden');
+      document.getElementById('sleepSound').classList.add('hidden');
+      document.getElementById('dateTimeSettings').classList.add('hidden');
+      document.getElementById('phillipsHue').classList.remove('hidden');
     }
 
     function scanNetworks() {
@@ -211,11 +250,15 @@ setInterval(showCurrentTime, 1000); // Update time every second
     <button onclick="showLEDControl()">LED Control</button>
     <!-- <button onclick="showDateTimeSettings()">Date & Time Settings</button> -->
     <button onclick="showAlarmSettings()">Alarm Settings</button>
+    <button onclick="showWakeupSound()">Wake-up Sound</button>
+    <button onclick="showSleepSound()">Sleep Sound</button>
+    <button onclick="showPhillipsHue()">Phillips Hue</button>
   </div>
 
 
     <!-- Date and Time Settings Section -->
     <div id="dateTimeSettings" class="content hidden">
+      <div id="currentTime"></div>
       <h2>Date & Time Settings</h2>
       <form onsubmit="setDateTime(event); return false;">
         <label for="date">Date:</label><br>
@@ -255,16 +298,57 @@ setInterval(showCurrentTime, 1000); // Update time every second
   </div>
 
 
+  
+<div id="alarmSettings" class="content hidden">
   <div id="currentTime"></div>
-
   <form onsubmit="addAlarm(event)">
     <label for="alarmTime">Select Time:</label>
     <input type="time" id="alarmTime" required>
-  
-
-  
     <button type="submit">Set Alarm</button>
   </form>
+</div>
+
+
+
+<!-- Wake-up Sound Section -->
+<div id="wakeupSound" class="content hidden">
+  <h2>Wake-up Sound</h2>
+  <label for="wakeupSoundSelect">Choose a sound:</label>
+  <select id="wakeupSoundSelect" name="wakeupSound">
+    <option value="alarm1">Alarm tone 1</option>
+    <option value="alarm2">Alarm tone 2</option>
+    <option value="alarm3">Alarm tone 3</option>
+  </select>
+
+  <label for="wakeupVolume">Volume:</label>
+  <input type="range" id="wakeupVolume" name="volume" min="0" max="255" oninput="changeVolume(this.value)">
+
+  <button class="preview-button" onclick="previewWakeupSound()">Preview</button>
+</div>
+
+<!-- Sleep Sound Section -->
+<div id="sleepSound" class="content hidden">
+  <h2>Sleep Sound</h2>
+  <p>(Streaming from URL)</p>
+  <label for="sleepSoundSelect">Choose a sound:</label>
+  <select id="sleepSoundSelect" name="sleepSound">
+    <option value="rain">Rain</option>
+    <option value="ocean">Ocean</option>
+    <option value="forest">Forest</option>
+  </select>
+
+  <label for="sleepVolume">Volume:</label>
+  <input type="range" id="sleepVolume" name="volume" min="0" max="255" oninput="changeVolume(this.value)">
+
+  <button class="preview-button" onclick="previewSleepSound()">Preview</button>
+</div>
+
+<!-- Phillips Hue Section -->
+<div id="phillipsHue" class="content hidden">
+  <h2>Phillips Hue</h2>
+  <!-- Placeholder for Phillips Hue controls -->
+  <!-- Add specific controls here based on the functionality required -->
+</div>
   
 </body>
 </html>
