@@ -75,6 +75,17 @@ void setDateTime() {
 }
 
 
+void changeVolume(){
+   if (server.hasArg("data")) {
+    // int volume = server.arg("data").toInt();
+    // //analogWrite(ledPin, volume);  // Set LED brightness
+    // server.send(200, "text/plain", "Volume set to " + String(volume));
+    Serial.println("volume");
+  // } else {
+  //   server.send(400, "text/plain", "Bad Request: No value provided");
+  }
+
+}
 
 void startWebServer() {
   server.on("/", HTTP_GET, []() {
@@ -99,7 +110,7 @@ void startWebServer() {
   server.on("/setDateTime", setDateTime);
   server.on("/addAlarm", setAlarm);
   server.on("/amPmValue", setAmPm);
-
+  server.on("/changeVolume", changeVolume);
 
   // server.on("/toggleLED", HTTP_GET, toggleLED);
 
