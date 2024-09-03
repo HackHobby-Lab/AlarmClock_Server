@@ -251,6 +251,26 @@
         .catch(error => console.error('Error previewing sound:', error));
     }
 
+    // Function to handle "Search for bridge" button click
+    function searchForBridge() {
+      fetch('/searchForBridge', {
+        method: 'POST'
+      })
+      .then(response => response.text())
+      .then(data => console.log('Search for bridge triggered:', data))
+      .catch(error => console.error('Error:', error));
+    }
+
+    // Function to handle "Add manually" button click
+    function addManually() {
+      fetch('/addManually', {
+        method: 'POST'
+      })
+      .then(response => response.text())
+      .then(data => console.log('Add manually triggered:', data))
+      .catch(error => console.error('Error:', error));
+    }
+
     function addAlarm(event) {
       event.preventDefault();
 
@@ -423,8 +443,8 @@
   <!-- Phillips Hue Section -->
   <div id="phillipsHue" class="content hidden">
     <h2>Phillips Hue</h2>
-    <!-- Placeholder for Phillips Hue controls -->
-    <!-- Add specific controls here based on the functionality required -->
+    <button class="hue-button" onclick="searchForBridge()">Search for bridge</button>
+    <button class="hue-button" onclick="addManually()">Add manually</button>
   </div>
 
 </body>
