@@ -10,7 +10,8 @@ const int resetThreshold = 5;
 WiFiClient espClient;
 
 // Define the static IP addresses
-IPAddress local_IP(192, 168, 1, 148);    // Static IP address in STA mode
+IPAddress local_IP(192, 168, 2, 148);    // Static IP address in STA mode
+// IPAddress local_IP(192, 168, 1, 148);    // Static IP address in STA mode
 IPAddress gateway(192, 168, 1, 1);         // Gateway IP address
 IPAddress subnet(255, 255, 255, 0);        // Subnet mask
 IPAddress ap_IP(192, 168, 1, 148);       // Static IP address in AP mode
@@ -124,14 +125,44 @@ void previewSleepSound() {
   }
 }
 
+// Function to handle searching for the Philips Hue Bridge using mDNS
 void handleSearchForBridge() {
-  Serial.println("Search for bridge button pressed");
-  server.send(200, "text/plain", "Search for bridge triggered");
+  int n = MDNS.queryService("hue", "tcp"); // Search for services named "hue" over TCP
+  
+  if (n == 0) {
+    Serial.println("No Philips Hue Bridge found");
+    server.send(404, "text/plain", "No Philips Hue Bridge found");
+  } else {
+    // Assume the first result is the desired Philips Hue Bridge
+    String bridgeIP = MDNS.IP(0).toString();
+    Serial.println("Philips Hue Bridge found at IP: " + bridgeIP);
+    server.send(200, "text/plain", bridgeIP);
+  }
 }
 
+// Function to handle manually adding the Philips Hue Bridge IP
 void handleAddManually() {
-  Serial.println("Add manually button pressed");
-  server.send(200, "text/plain", "Add manually triggered");
+  if (server.hasArg("plain")) {
+    String requestBody = server.arg("plain");
+    
+    // Extract IP from requestBody (assuming JSON format)
+    String bridgeIP;
+    int ipIndex = requestBody.indexOf("ip\":\"") + 5;
+    if (ipIndex != -1) {
+      int ipEndIndex = requestBody.indexOf("\"", ipIndex);
+      bridgeIP = requestBody.substring(ipIndex, ipEndIndex);
+      
+      // Save or use the bridge IP (replace with actual storage or usage logic)
+      Serial.println("Bridge IP added manually: " + bridgeIP);
+      
+      // Respond to the client
+      server.send(200, "text/plain", "Bridge added successfully: " + bridgeIP);
+    } else {
+      server.send(400, "text/plain", "Invalid request format");
+    }
+  } else {
+    server.send(400, "text/plain", "No data received");
+  }
 }
 
 void startWebServer() {
@@ -162,8 +193,8 @@ void startWebServer() {
   server.on("/previewWakeupSound", HTTP_POST, previewWakeupSound);
   server.on("/setSleepSound", setSleepSound); 
   server.on("/previewSleepSound", HTTP_POST, previewSleepSound);
-  server.on("/searchForBridge", handleSearchForBridge);
-  server.on("/addManually", handleAddManually);
+  server.on("/searchForBridge", HTTP_POST, handleSearchForBridge);
+  server.on("/addManually", HTTP_POST, handleAddManually);
 
   // server.on("/toggleLED", HTTP_GET, toggleLED);
 
