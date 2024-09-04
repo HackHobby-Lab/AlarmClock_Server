@@ -124,6 +124,16 @@ void previewSleepSound() {
   }
 }
 
+void handleSearchForBridge() {
+  Serial.println("Search for bridge button pressed");
+  server.send(200, "text/plain", "Search for bridge triggered");
+}
+
+void handleAddManually() {
+  Serial.println("Add manually button pressed");
+  server.send(200, "text/plain", "Add manually triggered");
+}
+
 void startWebServer() {
   server.on("/", HTTP_GET, []() {
     File file = SPIFFS.open("/index.html", "r");
@@ -152,6 +162,8 @@ void startWebServer() {
   server.on("/previewWakeupSound", HTTP_POST, previewWakeupSound);
   server.on("/setSleepSound", setSleepSound); 
   server.on("/previewSleepSound", HTTP_POST, previewSleepSound);
+  server.on("/searchForBridge", handleSearchForBridge);
+  server.on("/addManually", handleAddManually);
 
   // server.on("/toggleLED", HTTP_GET, toggleLED);
 
