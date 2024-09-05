@@ -45,7 +45,7 @@
       document.getElementById('alarmSettings').classList.add('hidden');
       document.getElementById('sleepSound').classList.add('hidden');
       document.getElementById('wakeupSound').classList.add('hidden');
-      document.getElementById('phillipsHue').classList.add('hidden');
+      document.getElementById('smartHomeSettings').classList.add('hidden');
     }
 
     function showLEDControl() {
@@ -55,7 +55,7 @@
       document.getElementById('alarmSettings').classList.add('hidden');
       document.getElementById('sleepSound').classList.add('hidden');
       document.getElementById('wakeupSound').classList.add('hidden');
-      document.getElementById('phillipsHue').classList.add('hidden');
+      document.getElementById('smartHomeSettings').classList.add('hidden');
     }
 
     // function showDateTimeSettings() {
@@ -73,7 +73,7 @@
       document.getElementById('dateTimeSettings').classList.add('hidden');
       document.getElementById('sleepSound').classList.add('hidden');
       document.getElementById('wakeupSound').classList.add('hidden');
-      document.getElementById('phillipsHue').classList.add('hidden');
+      document.getElementById('smartHomeSettings').classList.add('hidden');
     }
 
     function showWakeupSound() {
@@ -82,7 +82,7 @@
       document.getElementById('alarmSettings').classList.add('hidden');
       document.getElementById('wakeupSound').classList.remove('hidden');
       document.getElementById('sleepSound').classList.add('hidden');
-      document.getElementById('phillipsHue').classList.add('hidden');
+      document.getElementById('smartHomeSettings').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.add('hidden');
     }
 
@@ -92,18 +92,20 @@
       document.getElementById('alarmSettings').classList.add('hidden');
       document.getElementById('wakeupSound').classList.add('hidden');
       document.getElementById('sleepSound').classList.remove('hidden');
-      document.getElementById('phillipsHue').classList.add('hidden');
+      document.getElementById('smartHomeSettings').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.add('hidden');
     }
 
-    function showPhillipsHue() {
+    function showSmartHomeSettings() {
       document.getElementById('wifiSettings').classList.add('hidden');
       document.getElementById('ledControl').classList.add('hidden');
       document.getElementById('alarmSettings').classList.add('hidden');
       document.getElementById('wakeupSound').classList.add('hidden');
       document.getElementById('sleepSound').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.add('hidden');
-      document.getElementById('phillipsHue').classList.remove('hidden');
+      document.getElementById('philipsHueSettings').classList.add('hidden');
+      document.getElementById('advancedSettings').classList.add('hidden');
+      document.getElementById('smartHomeSettings').classList.remove('hidden');
     }
 
     function scanNetworks() {
@@ -251,24 +253,76 @@
         .catch(error => console.error('Error previewing sound:', error));
     }
 
+    // Function to handle the "Philips Hue" button click
+    function philipsHue() {
+      document.getElementById('philipsHueSettings').classList.remove('hidden');
+      document.getElementById('advancedSettings').classList.add('hidden');
+      document.getElementById('manualIpInput').classList.add('hidden');
+      document.getElementById('hueFeedback').classList.add('hidden');
+    }
+
+    // Function to handle the "Advanced" button click
+    function advanced() {
+      document.getElementById('philipsHueSettings').classList.add('hidden');
+      document.getElementById('advancedSettings').classList.remove('hidden');
+    }
+
     // Function to handle "Search for bridge" button click
     function searchForBridge() {
+      document.getElementById('manualIpInput').classList.add('hidden');
+      document.getElementById('hueFeedback').classList.add('hidden');
+
+      const feedbackElement = document.getElementById('hueFeedback');
+      feedbackElement.textContent = 'Searching for Philips Hue Bridge...';
+      feedbackElement.classList.remove('hidden');
+
       fetch('/searchForBridge', {
         method: 'POST'
       })
-      .then(response => response.text())
-      .then(data => console.log('Search for bridge triggered:', data))
-      .catch(error => console.error('Error:', error));
+      .then(response => {
+        if (response.ok) {
+          return response.text();
+        } else {
+          throw new Error('No bridge found');
+        }
+      })
+      .then(data => {
+        feedbackElement.textContent = 'Bridge found at IP: ' + data;
+      })
+      .catch(error => {
+        feedbackElement.textContent = error.message;
+      });
     }
 
     // Function to handle "Add manually" button click
     function addManually() {
+      document.getElementById('manualIpInput').classList.remove('hidden');
+      document.getElementById('hueFeedback').classList.add('hidden');
+    }
+
+    // Function to submit IP address for manual addition
+    function submitIp() {
+      const ip = document.getElementById('bridgeIp').value;
+      const feedbackElement = document.getElementById('hueFeedback');
+      
       fetch('/addManually', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ip: ip })
       })
       .then(response => response.text())
-      .then(data => console.log('Add manually triggered:', data))
-      .catch(error => console.error('Error:', error));
+      .then(data => {
+        feedbackElement.textContent = 'Bridge added successfully!';
+        feedbackElement.classList.remove('hidden');
+        document.getElementById('manualIpInput').classList.add('hidden');
+      })
+      .catch(error => {
+        feedbackElement.textContent = 'Failed to add bridge. Please check the IP and try again.';
+        feedbackElement.classList.remove('hidden');
+        console.error('Error:', error);
+      });
     }
 
     function addAlarm(event) {
@@ -353,7 +407,7 @@
     <button onclick="showAlarmSettings()">Alarm Settings</button>
     <button onclick="showWakeupSound()">Wake-up Sound</button>
     <button onclick="showSleepSound()">Sleep Sound</button>
-    <button onclick="showPhillipsHue()">Phillips Hue</button>
+    <button onclick="showSmartHomeSettings()">Smart Home Settings</button>
   </div>
 
 
@@ -440,11 +494,36 @@
     <button class="preview-button" onclick="previewSleepSound()">Preview</button>
   </div>
 
-  <!-- Phillips Hue Section -->
-  <div id="phillipsHue" class="content hidden">
-    <h2>Phillips Hue</h2>
-    <button class="hue-button" onclick="searchForBridge()">Search for bridge</button>
-    <button class="hue-button" onclick="addManually()">Add manually</button>
+  <!-- Smart Home Settings Section -->
+  <div id="smartHomeSettings" class="content hidden">
+    <h2>Smart Home Settings</h2>
+    <button onclick="philipsHue()">Philips Hue</button>
+    <button onclick="advanced()">Advanced</button>
+
+    <!-- Phillips Hue Section -->
+    <div id="philipsHueSettings" class="content hidden">
+      <h3>Phillips Hue</h3>
+      <button class="hue-button" onclick="searchForBridge()">Search for bridge</button>
+      <button class="hue-button" onclick="addManually()">Add manually</button>
+
+      <!-- Status/Feedback Section -->
+      <div id="hueFeedback" class="content hidden"></div>
+
+      <!-- Manual IP Input Section (hidden initially) -->
+      <div id="manualIpInput" class="content hidden">
+        <p>Enter the IP address of your Philips Hue Bridge:</p>
+        <input type="text" id="bridgeIp" placeholder="192.168.x.x">
+        <button onclick="submitIp()">Submit</button>
+      </div>
+    </div>
+
+    <!-- Advanced Section -->
+    <div id="advancedSettings" class="content hidden">
+      <h3>Advanced Settings</h3>
+      <p>MQTT Information</p>
+      <!-- Add MQTT settings or information here -->
+    </div>
+
   </div>
 
 </body>

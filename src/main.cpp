@@ -7,7 +7,7 @@
 void setup_wifi() {
   delay(10);
   Serial.println();
-  preferences.begin("wifi", false);
+  preferences.begin("wifi", false); // REVISIT: Already initialized
 
   int resetCount = preferences.getInt("resetCount", 0);
   resetCount++;
@@ -37,7 +37,7 @@ void setup_wifi() {
     }
 
     if (WiFi.status() == WL_CONNECTED) {
-      Serial.print("\nConnected to WiFi");
+      Serial.print("\nConnected to WiFi\n");
       Serial.println("IP address: ");
       Serial.println(WiFi.localIP());
       preferences.putInt("resetCount", 0); 
@@ -66,6 +66,14 @@ void setup() {
 
   preferences.begin("wifi", false);
   setup_wifi();
+
+  // REVISIT: ADD CHECKS WHEN TO START mDNS RESPONDER??
+  // Start mDNS responder
+  if (!MDNS.begin("esp32")) {
+    Serial.println("Error starting mDNS");
+    return;
+  }
+  Serial.println("mDNS responder started");
 }
 
 void loop() {
