@@ -6,6 +6,8 @@
 #include <FS.h>
 #include <SPIFFS.h>
 #include <ESPmDNS.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 
 extern Preferences preferences;
 extern WebServer server;

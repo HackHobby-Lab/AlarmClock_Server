@@ -3,6 +3,7 @@
 // Define the global variables
 Preferences preferences;
 WebServer server(80);
+HTTPClient http;
 
 const char* apSSID = "AlarmClock";
 const char* apPassword = "12345678";
@@ -10,14 +11,19 @@ const int resetThreshold = 5;
 WiFiClient espClient;
 
 // Define the static IP addresses
-IPAddress local_IP(192, 168, 2, 148);    // Static IP address in STA mode
-// IPAddress local_IP(192, 168, 1, 148);    // Static IP address in STA mode
+IPAddress local_IP(192, 168, 1, 148);    // Static IP address in STA mode
 IPAddress gateway(192, 168, 1, 1);         // Gateway IP address
 IPAddress subnet(255, 255, 255, 0);        // Subnet mask
 IPAddress ap_IP(192, 168, 1, 148);       // Static IP address in AP mode
 
 const int ledPin = 2;  // LED pin, change this according to your setup
 bool ledState = false;
+
+// Hue Emulator details
+const char* hueEmulatorIP = "192.168.18.24";
+const char* apiUsername = "newdeveloper";
+const int lightID_1 = 1;  // Light ID for wakeup
+const int lightID_2 = 2;  // Light ID for sleep
 
 void toggleLED() {
   ledState = !ledState;
@@ -165,6 +171,86 @@ void handleAddManually() {
   }
 }
 
+// Function to send the light state to the Hue Emulator
+void setLightState(int lightID, bool turnOn) {
+  if (WiFi.status() == WL_CONNECTED) {
+    String url = "http://" + String(hueEmulatorIP) + "/api/" + String(apiUsername) + "/lights/" + String(lightID) + "/state";
+    
+    Serial.println("URL: " + url);
+    
+    // Prepare the HTTPClient
+    http.begin(url); // Use HTTP URL
+    http.addHeader("Content-Type", "application/json");
+    
+    // Construct the payload
+    String payload = turnOn ? "{\"on\": true}" : "{\"on\": false}";
+    Serial.println("Payload: " + payload);
+
+    // Send HTTP PUT request
+    int httpResponseCode = http.PUT(payload);
+    
+    // Check the response
+    Serial.println("HTTP Response Code: " + String(httpResponseCode));
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      Serial.println("Response: " + response);
+    } else {
+      Serial.println("Error Response Code: " + String(httpResponseCode));
+    }
+    
+    http.end();
+  } else {
+    Serial.println("WiFi not connected. Status: " + String(WiFi.status()));
+  }
+}
+
+// Function to handle scene submission
+void handleSubmitScenes() {
+  if (server.hasArg("plain")) {
+    // Parse the received JSON payload
+    String body = server.arg("plain");
+    StaticJsonDocument<200> doc;
+    DeserializationError error = deserializeJson(doc, body);
+
+    if (error) {
+      Serial.println("Failed to parse JSON");
+      server.send(400, "application/json", "{\"status\":\"failed to parse JSON\"}");
+      return;
+    }
+
+    // Extract wakeScene and sleepScene from the JSON object
+    const char* wakeScene = doc["wakeScene"];
+    const char* sleepScene = doc["sleepScene"];
+
+    // // Print the scenes to the serial monitor
+    // Serial.print("Selected wake-up scene: ");
+    // Serial.println(wakeScene);
+    // Serial.print("Selected sleep scene: ");
+    // Serial.println(sleepScene);
+
+    // Handle scenes based on user's selection
+    if (strcmp(wakeScene, "Good morning scene") == 0) {
+      Serial.println("Turning on Light 1 for Good Morning scene.");
+      setLightState(lightID_1, true);  // Turn on Light 1
+      // setLightState(lightID_2, false); // Ensure Light 2 is off
+    } 
+    if (strcmp(sleepScene, "Good night scene") == 0) {
+      Serial.println("Turning on Light 2 for Good Night scene.");
+      setLightState(lightID_2, true);  // Turn on Light 2
+      // setLightState(lightID_1, false); // Ensure Light 1 is off
+    } else if (strcmp(sleepScene, "Night light scene") == 0) {
+      Serial.println("Turning off both lights.");
+      setLightState(lightID_1, false); // Turn off Light 1
+      setLightState(lightID_2, false); // Turn off Light 2
+    }
+
+    // Respond to the client
+    server.send(200, "application/json", "{\"status\":\"scenes received\"}");
+  } else {
+    server.send(400, "application/json", "{\"status\":\"no body received\"}");
+  }
+}
+
 void startWebServer() {
   server.on("/", HTTP_GET, []() {
     File file = SPIFFS.open("/index.html", "r");
@@ -195,6 +281,7 @@ void startWebServer() {
   server.on("/previewSleepSound", HTTP_POST, previewSleepSound);
   server.on("/searchForBridge", HTTP_POST, handleSearchForBridge);
   server.on("/addManually", HTTP_POST, handleAddManually);
+  server.on("/submitScenes", HTTP_POST, handleSubmitScenes);
 
   // server.on("/toggleLED", HTTP_GET, toggleLED);
 

@@ -26,7 +26,7 @@ void setup_wifi() {
   String password = preferences.getString("password", "");
 
   if (ssid != "") {
-    WiFi.config(local_IP, gateway, subnet); // Set static IP for STA mode
+    // WiFi.config(local_IP, gateway, subnet); // Set static IP for STA mode
     WiFi.begin(ssid.c_str(), password.c_str());
     Serial.printf("Connecting to WiFi SSID: %s \n", ssid.c_str());
     int attempts = 0;
@@ -74,6 +74,7 @@ void setup() {
     return;
   }
   Serial.println("mDNS responder started");
+
 }
 
 void loop() {
