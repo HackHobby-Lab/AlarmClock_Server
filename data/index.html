@@ -38,7 +38,33 @@
   <script>
     let alarms = [];
 
+    function showWelcomeScreen() {
+      document.getElementById('WelcomeScreen').classList.remove('hidden');
+      document.getElementById('ScheduleScreen').classList.add('hidden');
+      document.getElementById('dateTimeSettings').classList.add('hidden');
+      document.getElementById('wifiSettings').classList.add('hidden');
+      document.getElementById('ledControl').classList.add('hidden');
+      document.getElementById('alarmSettings').classList.add('hidden');
+      document.getElementById('sleepSound').classList.add('hidden');
+      document.getElementById('wakeupSound').classList.add('hidden');
+      document.getElementById('smartHomeSettings').classList.add('hidden');
+    }
+
+    function showScheduleScreen() {
+      document.getElementById('WelcomeScreen').classList.add('hidden');
+      document.getElementById('ScheduleScreen').classList.remove('hidden');
+      document.getElementById('dateTimeSettings').classList.add('hidden');
+      document.getElementById('wifiSettings').classList.add('hidden');
+      document.getElementById('ledControl').classList.add('hidden');
+      document.getElementById('alarmSettings').classList.add('hidden');
+      document.getElementById('sleepSound').classList.add('hidden');
+      document.getElementById('wakeupSound').classList.add('hidden');
+      document.getElementById('smartHomeSettings').classList.add('hidden');
+    }
+
     function showWiFiSettings() {
+      document.getElementById('WelcomeScreen').classList.add('hidden');
+      document.getElementById('ScheduleScreen').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.remove('hidden');
       document.getElementById('wifiSettings').classList.remove('hidden');
       document.getElementById('ledControl').classList.add('hidden');
@@ -49,6 +75,8 @@
     }
 
     function showLEDControl() {
+      document.getElementById('WelcomeScreen').classList.add('hidden');
+      document.getElementById('ScheduleScreen').classList.add('hidden');
       document.getElementById('ledControl').classList.remove('hidden');
       document.getElementById('wifiSettings').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.add('hidden');
@@ -67,6 +95,8 @@
     // }
 
     function showAlarmSettings() {
+      document.getElementById('WelcomeScreen').classList.add('hidden');
+      document.getElementById('ScheduleScreen').classList.add('hidden');
       document.getElementById('alarmSettings').classList.remove('hidden');
       document.getElementById('wifiSettings').classList.add('hidden');
       document.getElementById('ledControl').classList.add('hidden');
@@ -77,6 +107,8 @@
     }
 
     function showWakeupSound() {
+      document.getElementById('WelcomeScreen').classList.add('hidden');
+      document.getElementById('ScheduleScreen').classList.add('hidden');
       document.getElementById('wifiSettings').classList.add('hidden');
       document.getElementById('ledControl').classList.add('hidden');
       document.getElementById('alarmSettings').classList.add('hidden');
@@ -87,6 +119,8 @@
     }
 
     function showSleepSound() {
+      document.getElementById('WelcomeScreen').classList.add('hidden');
+      document.getElementById('ScheduleScreen').classList.add('hidden');
       document.getElementById('wifiSettings').classList.add('hidden');
       document.getElementById('ledControl').classList.add('hidden');
       document.getElementById('alarmSettings').classList.add('hidden');
@@ -97,6 +131,8 @@
     }
 
     function showSmartHomeSettings() {
+      document.getElementById('WelcomeScreen').classList.add('hidden');
+      document.getElementById('ScheduleScreen').classList.add('hidden');
       document.getElementById('wifiSettings').classList.add('hidden');
       document.getElementById('ledControl').classList.add('hidden');
       document.getElementById('alarmSettings').classList.add('hidden');
@@ -325,6 +361,33 @@
       });
     }
 
+    // Function to submit the selected wake up and sleep scenes
+    function submitScenes() {
+      const wakeScene = document.getElementById('wakeScene').value;
+      const sleepScene = document.getElementById('sleepScene').value;
+
+      // alert("Wakeup Scene: " + wakeScene + "\nSleep Scene: " + sleepScene);
+      
+      // Send the selected scenes to the server (replace with actual logic)
+      fetch('/submitScenes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          wakeScene: wakeScene,
+          sleepScene: sleepScene
+        })
+      })
+      .then(response => response.text())
+      .then(data => {
+        console.log("Scenes submitted:", data);
+      })
+      .catch(error => {
+        console.error("Error submitting scenes:", error);
+      });
+    }
+
     function addAlarm(event) {
       event.preventDefault();
 
@@ -355,8 +418,6 @@
       const currentTime = `${hours}:${minutes} ${amPm}`;
       document.getElementById('currentTime').innerText = `Current Time: ${currentTime}`;
     }
-
-    setInterval(showCurrentTime, 1000); // Update time every second
 
     function deleteAlarm(alarmId) {
       alarms = alarms.filter(alarm => alarm.id !== alarmId);
@@ -389,6 +450,8 @@
       });
     }
 
+    setInterval(showCurrentTime, 1000); // Update time every second
+
     window.onload = function () {
       fetchWiFiStatus();
       scanNetworks();
@@ -401,6 +464,8 @@
 
   <!-- Buttons for navigating between settings -->
   <div>
+    <button onclick="showWelcomeScreen()">Welcome</button>
+    <button onclick="showScheduleScreen()">Schedule</button>
     <button onclick="showWiFiSettings()">System Settings</button>
     <button onclick="showLEDControl()">LED Control</button>
     <!-- <button onclick="showDateTimeSettings()">Date & Time Settings</button> -->
@@ -410,6 +475,15 @@
     <button onclick="showSmartHomeSettings()">Smart Home Settings</button>
   </div>
 
+  <!-- Welcome Screen Section -->
+  <div id="WelcomeScreen" class="content hidden">
+    <p>IP Address: <span id="ipAddress">N/A</span></p>
+  </div>
+
+  <!-- Schedule Screen Section -->
+  <div id="ScheduleScreen" class="content hidden">
+    <h2>Alarm Clock Schedule Settings</h2>
+  </div>
 
   <!-- Date and Time Settings Section -->
   <div id="dateTimeSettings" class="content hidden">
@@ -441,7 +515,7 @@
     </form>
     <h2>Current Wi-Fi Status</h2>
     <p>Connected Network: <span id="connectedNetwork">Not connected</span></p>
-    <p>IP Address: <span id="ipAddress">N/A</span></p>
+    <!-- <p>IP Address: <span id="ipAddress">N/A</span></p> -->
   </div>
 
   <!-- LED Control Section -->
@@ -522,6 +596,25 @@
       <h3>Advanced Settings</h3>
       <p>MQTT Information</p>
       <!-- Add MQTT settings or information here -->
+    </div>
+
+    <!-- Scene Selection Section -->
+    <div id="sceneSettings" class="content">
+      <h3>Scene to activate on wake-up</h3>
+      <select id="wakeScene">
+        <option value="Good morning scene">Good morning scene</option>
+        <option value="Sunrise scene">Sunrise scene</option>
+        <option value="Energize scene">Energize scene</option>
+      </select><br><br>
+
+      <h3>Scene to activate on sleep</h3>
+      <select id="sleepScene">
+        <option value="Good night scene">Good night scene</option>
+        <option value="Night light scene">Night light scene</option>
+        <option value="Relax scene">Relax scene</option>
+      </select><br><br>
+
+      <button onclick="submitScenes()">Submit Scenes</button>
     </div>
 
   </div>
