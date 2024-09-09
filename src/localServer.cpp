@@ -21,6 +21,7 @@ bool ledState = false;
 
 // Hue Emulator details
 const char* hueEmulatorIP = "192.168.0.111";
+String bridgeIP;
 const char* apiUsername = "newdeveloper";
 const int lightID_1 = 1;  // Light ID for wakeup
 const int lightID_2 = 2;  // Light ID for sleep
@@ -140,7 +141,7 @@ void handleSearchForBridge() {
     server.send(404, "text/plain", "No Philips Hue Bridge found");
   } else {
     // Assume the first result is the desired Philips Hue Bridge
-    String bridgeIP = MDNS.IP(0).toString();
+    bridgeIP = MDNS.IP(0).toString();
     Serial.println("Philips Hue Bridge found at IP: " + bridgeIP);
     server.send(200, "text/plain", bridgeIP);
   }
@@ -152,7 +153,7 @@ void handleAddManually() {
     String requestBody = server.arg("plain");
     
     // Extract IP from requestBody (assuming JSON format)
-    String bridgeIP;
+    
     int ipIndex = requestBody.indexOf("ip\":\"") + 5;
     if (ipIndex != -1) {
       int ipEndIndex = requestBody.indexOf("\"", ipIndex);
@@ -174,7 +175,7 @@ void handleAddManually() {
 // Function to send the light state to the Hue Emulator
 void setLightState(int lightID, bool turnOn) {
   if (WiFi.status() == WL_CONNECTED) {
-    String url = "http://" + String(hueEmulatorIP) + "/api/" + String(apiUsername) + "/lights/" + String(lightID) + "/state";
+    String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/lights/" + String(lightID) + "/state";
     
     Serial.println("URL: " + url);
     
