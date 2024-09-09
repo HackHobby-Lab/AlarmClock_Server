@@ -20,7 +20,7 @@ const int ledPin = 2;  // LED pin, change this according to your setup
 bool ledState = false;
 
 // Hue Emulator details
-const char* hueEmulatorIP = "192.168.18.24";
+const char* hueEmulatorIP = "192.168.0.111";
 const char* apiUsername = "newdeveloper";
 const int lightID_1 = 1;  // Light ID for wakeup
 const int lightID_2 = 2;  // Light ID for sleep
@@ -133,7 +133,7 @@ void previewSleepSound() {
 
 // Function to handle searching for the Philips Hue Bridge using mDNS
 void handleSearchForBridge() {
-  int n = MDNS.queryService("hue", "tcp"); // Search for services named "hue" over TCP
+  int n = MDNS.queryService("_http", "tcp"); // Search for services named "hue" over TCP
   
   if (n == 0) {
     Serial.println("No Philips Hue Bridge found");
