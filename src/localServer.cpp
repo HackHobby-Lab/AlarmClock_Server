@@ -1,4 +1,5 @@
 #include "localServer.h"
+#include "Display.h"
 
 // Define the global variables
 Preferences preferences;
@@ -45,16 +46,29 @@ void setBrightness() {
   }
 }
 
+
 void setAlarm(){
-  if(server.hasArg("alarmTime")){
+  if (server.hasArg("alarmTime")) {
     String alarmTime = server.arg("alarmTime");
 
+    // Log the received alarm time
     Serial.println("Alarm Time: " + alarmTime);
 
+    // Parse the alarm time (assumes format HH:MM:SS with optional AM/PM)
+    int hour = alarmTime.substring(0, 2).toInt();
+    int minute = alarmTime.substring(3, 5).toInt();
+    int second = alarmTime.substring(6, 8).toInt();
+
+    // Check if it's AM or PM (optional)
+    bool isPM = alarmTime.endsWith("PM");
+
+    // Call the function to set the alarm in another file
+    setAlarmTime(hour, minute, second, isPM);
+
+    // Send a success response to the client
     server.send(200, "text/plain", "Alarm Time set to: " + alarmTime);
-  }
-  else {
-    server.send(400, "text/plain", "Bad Request: Alarm Date not Provided");
+  } else {
+    server.send(400, "text/plain", "Bad Request: Alarm Time not provided");
   }
 }
 
@@ -64,29 +78,44 @@ void setAmPm(){
   }
 }
 
+
 void setDateTime() {
   if (server.hasArg("date") && server.hasArg("time")) {
     String date = server.arg("date");
     String time = server.arg("time");
-    // String ampm = server.hasArg("ampm") ? server.arg("ampm") : ""; // Use this if you're handling AM/PM
-    // String ampm = server.hasArg("ampm") ? server.arg("ampm") : "";
-    // String amData = server.hasArg("data") ? server.arg("time") : "" ; // amData
-    // String pmData = server.hasArg("time") ? server.arg("time") : "";  //pmData
+
     // Log the received date and time
     Serial.println("Received Date: " + date);
     Serial.println("Received Time: " + time);
-    // Serial.println("AM/PM: " + ampm); // Uncomment if handling AM/PM
+
+    // Parse the date (assumes format YYYY-MM-DD)
+    int year = date.substring(0, 4).toInt();
+    int month = date.substring(5, 7).toInt();
+    int day = date.substring(8, 10).toInt();
+
+    // Parse the time (assumes format HH:MM:SS)
+    int hour = time.substring(0, 2).toInt();
+    int minute = time.substring(3, 5).toInt();
+    int second = time.substring(6, 8).toInt();
+
+    // Call the time-setting function from another file
+    setTimeFromValues(year, month, day, hour, minute, second);
 
     // Send a success response to the client
-    server.send(200, "text/plain", "Date and Time set to: " + date + " " + time /* + " " + ampm */);
+    server.send(200, "text/plain", "Date and Time set to: " + date + " " + time);
   } else {
     server.send(400, "text/plain", "Bad Request: Date or Time not provided");
   }
 }
 
 void changeVolume(){
-  String volume = server.arg("volume");
-  Serial.println(volume);
+  String level = server.arg("volume");
+  int volume = level.toInt();
+
+    if (volume >= 0 && volume <= 100) {
+      setDFPlayerVolume(volume);  // Call function from dfplayer.cpp
+      Serial.println("Volume set to: " + String(volume));}
+  Serial.println(level);
   server.send(200, "text/plain", "Volume set to " + volume);
 }
 
@@ -99,8 +128,22 @@ void setWakeupSound() {
 // Function to handle the preview of the wake-up sound
 void previewWakeupSound() {
   if (server.hasArg("sound")) {
-    String sound = server.arg("sound");
-    Serial.println("Previewing Wake-up Sound: " + sound);
+    String track = server.arg("sound");
+    int sound = 0;
+    if (track == "alarm1"){
+      sound = 1;
+    }
+    if (track == "alarm2"){
+      sound = 2;
+    }
+    if (track == "alarm3"){
+      sound = 3;
+    }
+
+    
+      playSound(sound);  // Preview sound using function from dfplayer.cpp
+      Serial.println("Previewing sound track: " + String(sound));
+    Serial.println("Previewing Wake-up Sound: " + track);
 
     // Here you would add the code to actually play the sound using your hardware
     // For example, playSound(sound);  // This function would be defined to play the sound
