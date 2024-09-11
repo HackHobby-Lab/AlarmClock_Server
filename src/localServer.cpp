@@ -54,13 +54,28 @@ void setAlarm(){
     // Log the received alarm time
     Serial.println("Alarm Time: " + alarmTime);
 
-    // Parse the alarm time (assumes format HH:MM:SS with optional AM/PM)
+    // Parse the alarm time
     int hour = alarmTime.substring(0, 2).toInt();
     int minute = alarmTime.substring(3, 5).toInt();
-    int second = alarmTime.substring(6, 8).toInt();
+    int second =  10;
 
-    // Check if it's AM or PM (optional)
-    bool isPM = alarmTime.endsWith("PM");
+    // Determine if it's AM or PM based on 24-hour format
+    bool isPM = false;
+    String amPmString;
+
+    if (hour >= 12) {
+        isPM = true;
+        amPmString = "PM";
+    } else {
+        amPmString = "AM";
+    }
+
+    Serial.print("Time: ");
+    Serial.print(hour);
+    Serial.print(":");
+    Serial.print(minute);
+    Serial.print(" ");
+    Serial.println(amPmString);
 
     // Call the function to set the alarm in another file
     setAlarmTime(hour, minute, second, isPM);
@@ -113,7 +128,7 @@ void changeVolume(){
   int volume = level.toInt();
 
     if (volume >= 0 && volume <= 100) {
-      setDFPlayerVolume(volume);  // Call function from dfplayer.cpp
+      setDFPlayerVolume(volume);  // Call function
       Serial.println("Volume set to: " + String(volume));}
   Serial.println(level);
   server.send(200, "text/plain", "Volume set to " + volume);
@@ -140,13 +155,9 @@ void previewWakeupSound() {
       sound = 3;
     }
 
-    
-      playSound(sound);  // Preview sound using function from dfplayer.cpp
+      playSound(sound);  // Preview sound using function 
       Serial.println("Previewing sound track: " + String(sound));
     Serial.println("Previewing Wake-up Sound: " + track);
-
-    // Here you would add the code to actually play the sound using your hardware
-    // For example, playSound(sound);  // This function would be defined to play the sound
 
     server.send(200, "text/plain", "Previewing sound " + sound);
   } else {
@@ -165,9 +176,6 @@ void previewSleepSound() {
   if (server.hasArg("sound")) {
     String sound = server.arg("sound");
     Serial.println("Previewing Sleep Sound: " + sound);
-
-    // Here you would add the code to actually play the sound using your hardware
-    // For example, playSound(sound);  // This function would be defined to play the sound
 
     server.send(200, "text/plain", "Previewing sound " + sound);
   } else {

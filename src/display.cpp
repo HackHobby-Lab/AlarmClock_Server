@@ -223,7 +223,7 @@ lastEncoderValue = encoderValue;
   // Check if it's time to trigger the alarm
   if (now.hour() == AlarmHH && now.minute() == AlarmMM) {
     alarmTriggered = true;  // Set alarm trigger flag
-                            //    tone(buzzerPin, 2000); // Play a tone on the buzzer
+    Serial.println("Alarm triggered!");    //    tone(buzzerPin, 2000); // Play a tone on the buzzer
 
 
     // Display current time in 12-hour format or alarm triggered message
