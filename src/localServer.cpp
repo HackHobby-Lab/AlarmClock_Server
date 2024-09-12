@@ -22,7 +22,7 @@ bool ledState = false;
 // Hue Emulator details
 const char* hueEmulatorIP = "192.168.0.111";
 String bridgeIP;
-const char* apiUsername = "newdeveloper";
+String apiUsername;
 const int lightID_1 = 1;  // Light ID for wakeup
 const int lightID_2 = 2;  // Light ID for sleep
 
@@ -134,7 +134,7 @@ void previewSleepSound() {
 
 // Function to handle searching for the Philips Hue Bridge using mDNS
 void handleSearchForBridge() {
-  int n = MDNS.queryService("_http", "tcp"); // Search for services named "hue" over TCP
+  int n = MDNS.queryService("_mi-connect", "tcp"); // Search for services named "hue" over TCP
   
   if (n == 0) {
     Serial.println("No Philips Hue Bridge found");
@@ -147,13 +147,11 @@ void handleSearchForBridge() {
   }
 }
 
-// Function to handle manually adding the Philips Hue Bridge IP
 void handleAddManually() {
   if (server.hasArg("plain")) {
     String requestBody = server.arg("plain");
     
     // Extract IP from requestBody (assuming JSON format)
-    
     int ipIndex = requestBody.indexOf("ip\":\"") + 5;
     if (ipIndex != -1) {
       int ipEndIndex = requestBody.indexOf("\"", ipIndex);
@@ -162,8 +160,39 @@ void handleAddManually() {
       // Save or use the bridge IP (replace with actual storage or usage logic)
       Serial.println("Bridge IP added manually: " + bridgeIP);
       
-      // Respond to the client
-      server.send(200, "text/plain", "Bridge added successfully: " + bridgeIP);
+      // Request the username from the bridge
+      if (WiFi.status() == WL_CONNECTED) {
+        HTTPClient http;
+        String url = "http://" + bridgeIP + "/api";
+        http.begin(url);
+        http.addHeader("Content-Type", "application/json");
+        int httpResponseCode = http.POST("{\"devicetype\":\"hue#AlarmClock\"}");
+        
+        if (httpResponseCode == 200) {
+          String response = http.getString();
+          Serial.println("Response from bridge: " + response);
+          
+          // Extract username from response (assuming JSON format)
+          int usernameStart = response.indexOf("username\":\"") + 11;
+          if (usernameStart != -1) {
+            int usernameEnd = response.indexOf("\"", usernameStart);
+             apiUsername = response.substring(usernameStart, usernameEnd);
+            Serial.println("Username: " + apiUsername);
+            
+            // Respond to the client with the username
+            server.send(200, "text/plain", "Bridge added successfully. Username: " + apiUsername);
+          } else {
+            server.send(400, "text/plain", "Username not found in response");
+          }
+        } else {
+          Serial.println("Error getting response from bridge: " + String(httpResponseCode));
+          server.send(400, "text/plain", "Failed to get username from bridge");
+        }
+        
+        http.end();
+      } else {
+        server.send(400, "text/plain", "WiFi not connected");
+      }
     } else {
       server.send(400, "text/plain", "Invalid request format");
     }
@@ -171,6 +200,7 @@ void handleAddManually() {
     server.send(400, "text/plain", "No data received");
   }
 }
+
 
 // Function to send the light state to the Hue Emulator
 void setLightState(int lightID, bool turnOn) {
