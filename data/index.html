@@ -340,6 +340,8 @@
     function submitIp() {
       const ip = document.getElementById('bridgeIp').value;
       const feedbackElement = document.getElementById('hueFeedback');
+      const loadingElement = document.getElementById('loading');
+      loadingElement.textContent= "Press the Link Button on Bridge";
       
       fetch('/addManually', {
         method: 'POST',
@@ -355,6 +357,7 @@
         document.getElementById('manualIpInput').classList.add('hidden');
       })
       .catch(error => {
+        loadingElement.classList.remove('hidden');
         feedbackElement.textContent = 'Failed to add bridge. Please check the IP and try again.';
         feedbackElement.classList.remove('hidden');
         console.error('Error:', error);
@@ -588,6 +591,7 @@
         <p>Enter the IP address of your Philips Hue Bridge:</p>
         <input type="text" id="bridgeIp" placeholder="192.168.x.x">
         <button onclick="submitIp()">Submit</button>
+      <div id="loading" class="hidden">Press the Link button on bridge</div>
       </div>
     </div>
 
