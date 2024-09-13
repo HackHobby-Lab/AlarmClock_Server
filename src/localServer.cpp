@@ -20,6 +20,8 @@ IPAddress ap_IP(192, 168, 1, 148);    // Static IP address in AP mode
 const int ledPin = 2; // LED pin, change this according to your setup
 bool ledState = false;
 
+String savedSettings;
+
 // Hue Emulator details
 const char *hueEmulatorIP = "192.168.0.111";
 String bridgeIP;
@@ -234,49 +236,38 @@ void handleSearchForBridge()
   }
 }
 
-void handleAddManually()
-{
+void handleAddManually(){
   if (server.hasArg("plain"))
   {
     String requestBody = server.arg("plain");
-
     // Extract IP from requestBody (assuming JSON format)
     int ipIndex = requestBody.indexOf("ip\":\"") + 5;
-    if (ipIndex != -1)
-    {
+    if (ipIndex != -1){
       int ipEndIndex = requestBody.indexOf("\"", ipIndex);
       bridgeIP = requestBody.substring(ipIndex, ipEndIndex);
-
       // Save or use the bridge IP (replace with actual storage or usage logic)
       Serial.println("Bridge IP added manually: " + bridgeIP);
-
       // Request the username from the bridge, retry for 30 seconds
-      if (WiFi.status() == WL_CONNECTED)
-      {
+      if (WiFi.status() == WL_CONNECTED){
         HTTPClient http;
         String url = "http://" + bridgeIP + "/api";
         http.addHeader("Content-Type", "application/json");
-
         unsigned long startTime = millis();
         bool usernameFound = false;
-
         while (millis() - startTime < 30000) // Retry for 30 seconds
         {
           http.begin(url);
           int httpResponseCode = http.POST("{\"devicetype\":\"hue#AlarmClock\"}");
-
+          
           if (httpResponseCode == 200)
           {
             String response = http.getString();
             Serial.println("Response from bridge: " + response);
             Serial.println("Retrying");
 
-            // Allocate a JsonDocument
             StaticJsonDocument<200> doc;
-
             // Deserialize the JSON document
             DeserializationError error = deserializeJson(doc, response);
-
             // Check if parsing succeeds
             if (!error)
             {
@@ -285,41 +276,36 @@ void handleAddManually()
               if (username != nullptr && strlen(username) > 0)
               {
                 apiUsername = username;
+                fetchScenesAndSendToClient();
                 Serial.print("Username: ");
                 Serial.println(username);
                 server.send(200, "text/plain", "Bridge added successfully. Username: " + apiUsername);
+                Serial.println("Bridge added successfully. Username: " + String(apiUsername));
                 usernameFound = true;
+                //fetchScenesAndSendToClient();
                 break; // Exit the loop since we found the username
               }
             }
           }
-
           // Delay before retrying to avoid hammering the API too fast
           delay(100);
         }
-
         http.end();
-
-        if (!usernameFound)
-        {
+        if (!usernameFound){
           server.send(400, "text/plain", "Failed to get username after 30 seconds. Make sure to press the link button on the bridge.");
         }
-      }
-      else
-      {
+      }else{
         server.send(400, "text/plain", "WiFi not connected");
       }
-    }
-    else
-    {
+    }else{
       server.send(400, "text/plain", "Invalid request format");
     }
-  }
-  else
-  {
+  }else{
     server.send(400, "text/plain", "No data received");
   }
 }
+
+
 
 // Function to send the light state to the Hue Emulator
 void setLightState(int lightID, bool turnOn)
@@ -416,6 +402,105 @@ void handleSubmitScenes()
     server.send(400, "application/json", "{\"status\":\"no body received\"}");
   }
 }
+// Function to fetch scenes from the Hue Emulator and send them as a JSON response
+void fetchScenesAndSendToClient() {
+  if (WiFi.status() == WL_CONNECTED) {
+    String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/scenes";
+    Serial.println("Fetching Scene");
+    HTTPClient http;
+    http.begin(url);  // Initialize HTTP connection
+    int httpCode = http.GET(); // Send GET request
+
+    if (httpCode > 0) {  // If successful response received
+      String response = http.getString();  // Get the response payload
+
+      // Parse JSON data
+      DynamicJsonDocument doc(2048);  // Increase size to accommodate more scenes
+      DeserializationError error = deserializeJson(doc, response);
+      
+      if (error) {
+        Serial.println("Failed to parse JSON: " + String(error.c_str()));
+        server.send(500, "text/plain", "Failed to parse scenes from the Hue Bridge.");
+        return;
+      }
+
+      // Create a new JSON document to store the scene names
+      DynamicJsonDocument responseDoc(1024);
+      JsonObject root = doc.as<JsonObject>();
+      JsonArray scenesArray = responseDoc.createNestedArray("scenes");  // Create an array for scenes
+      
+      // Access the root object (scenes) and store the scene names in the new array
+      for (JsonPair scenePair : root) {
+        JsonObject scene = scenePair.value().as<JsonObject>();  // Access scene object
+        String sceneName = scene["name"].as<String>();          // Get scene name
+        scenesArray.add(sceneName);                             // Add to scenes array
+      }
+
+      // Convert the new JSON document to a string and send it to the web interface
+      String jsonResponse;
+      serializeJson(responseDoc, jsonResponse);
+      server.send(200, "application/json", jsonResponse);  // Send response
+    } else {
+      Serial.println("Failed to connect to Hue Bridge. HTTP error code: " + String(httpCode));
+      server.send(500, "text/plain", "Failed to connect to the Hue Bridge.");
+    }
+
+    http.end();  // Close the HTTP connection
+
+  } else {
+    Serial.println("WiFi not connected.");
+    server.send(500, "text/plain", "WiFi not connected.");
+  }
+}
+
+
+
+// Function to handle saving settings
+void handleSaveSettings() {
+  
+  if (server.hasArg("plain")) {
+    String requestBody = server.arg("plain");
+    
+    // Parse JSON data
+    DynamicJsonDocument doc(1024);
+    DeserializationError error = deserializeJson(doc, requestBody);
+    
+    if (error) {
+      server.send(400, "text/plain", "Invalid JSON format");
+      return;
+    }
+    
+    // Extract settings from the JSON object
+    bool hueToggle = doc["hueToggle"];
+    String wakeUpScene = doc["wakeUpScene"].as<String>();
+    int fadeStart = doc["fadeStart"];
+    String customButton = doc["customButton"].as<String>();
+    String customScene = doc["customScene"].as<String>();
+    int fadeInCustom = doc["fadeInCustom"];
+
+    // Example: Save these settings in a global variable or EEPROM
+    savedSettings = requestBody; // You can also use EEPROM.write() or another storage method
+
+    Serial.println("Settings saved:");
+    Serial.println(savedSettings);
+    
+    // Send success response
+    server.send(200, "text/plain", "Settings saved successfully");
+  } else {
+    server.send(400, "text/plain", "No data received");
+  }
+}
+
+// Function to handle resetting settings
+void handleResetSettings() {
+  // Example of resetting to default values (you can define your own defaults)
+  savedSettings = "";
+  
+  Serial.println("Settings reset to defaults.");
+  
+  // Send success response
+  server.send(200, "text/plain", "Settings reset successfully");
+}
 
 void startWebServer()
 {
@@ -448,7 +533,10 @@ void startWebServer()
   server.on("/previewSleepSound", HTTP_POST, previewSleepSound);
   server.on("/searchForBridge", HTTP_POST, handleSearchForBridge);
   server.on("/addManually", HTTP_POST, handleAddManually);
-  server.on("/submitScenes", HTTP_POST, handleSubmitScenes);
+  server.on("/saveSettings", HTTP_POST, handleSaveSettings);
+  server.on("/resetSettings", HTTP_POST, handleResetSettings);
+  // server.on("/submitScenes", HTTP_POST, handleSubmitScenes);
+  server.on("/fetchScenes", HTTP_POST, fetchScenesAndSendToClient);
 
   // server.on("/toggleLED", HTTP_GET, toggleLED);
 

@@ -29,4 +29,5 @@ extern bool ledState;
 void toggleLED();
 void startWebServer();
 void startAPMode(); 
+void fetchScenesAndSendToClient();
 #endif // LOCALSERVER
