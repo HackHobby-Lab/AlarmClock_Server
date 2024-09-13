@@ -19,6 +19,8 @@ IPAddress ap_IP(192, 168, 1, 148);       // Static IP address in AP mode
 const int ledPin = 2;  // LED pin, change this according to your setup
 bool ledState = false;
 
+String savedSettings;
+
 // Hue Emulator details
 const char* hueEmulatorIP = "192.168.0.111";
 String bridgeIP;
@@ -201,7 +203,6 @@ void handleAddManually() {
   }
 }
 
-
 // Function to send the light state to the Hue Emulator
 void setLightState(int lightID, bool turnOn) {
   if (WiFi.status() == WL_CONNECTED) {
@@ -235,51 +236,50 @@ void setLightState(int lightID, bool turnOn) {
   }
 }
 
-// Function to handle scene submission
-void handleSubmitScenes() {
+// Function to handle saving settings
+void handleSaveSettings() {
   if (server.hasArg("plain")) {
-    // Parse the received JSON payload
-    String body = server.arg("plain");
-    StaticJsonDocument<200> doc;
-    DeserializationError error = deserializeJson(doc, body);
-
+    String requestBody = server.arg("plain");
+    
+    // Parse JSON data
+    DynamicJsonDocument doc(1024);
+    DeserializationError error = deserializeJson(doc, requestBody);
+    
     if (error) {
-      Serial.println("Failed to parse JSON");
-      server.send(400, "application/json", "{\"status\":\"failed to parse JSON\"}");
+      server.send(400, "text/plain", "Invalid JSON format");
       return;
     }
+    
+    // Extract settings from the JSON object
+    bool hueToggle = doc["hueToggle"];
+    String wakeUpScene = doc["wakeUpScene"].as<String>();
+    int fadeStart = doc["fadeStart"];
+    String customButton = doc["customButton"].as<String>();
+    String customScene = doc["customScene"].as<String>();
+    int fadeInCustom = doc["fadeInCustom"];
 
-    // Extract wakeScene and sleepScene from the JSON object
-    const char* wakeScene = doc["wakeScene"];
-    const char* sleepScene = doc["sleepScene"];
+    // Example: Save these settings in a global variable or EEPROM
+    savedSettings = requestBody; // You can also use EEPROM.write() or another storage method
 
-    // // Print the scenes to the serial monitor
-    // Serial.print("Selected wake-up scene: ");
-    // Serial.println(wakeScene);
-    // Serial.print("Selected sleep scene: ");
-    // Serial.println(sleepScene);
-
-    // Handle scenes based on user's selection
-    if (strcmp(wakeScene, "Good morning scene") == 0) {
-      Serial.println("Turning on Light 1 for Good Morning scene.");
-      setLightState(lightID_1, true);  // Turn on Light 1
-      // setLightState(lightID_2, false); // Ensure Light 2 is off
-    } 
-    if (strcmp(sleepScene, "Good night scene") == 0) {
-      Serial.println("Turning on Light 2 for Good Night scene.");
-      setLightState(lightID_2, true);  // Turn on Light 2
-      // setLightState(lightID_1, false); // Ensure Light 1 is off
-    } else if (strcmp(sleepScene, "Night light scene") == 0) {
-      Serial.println("Turning off both lights.");
-      setLightState(lightID_1, false); // Turn off Light 1
-      setLightState(lightID_2, false); // Turn off Light 2
-    }
-
-    // Respond to the client
-    server.send(200, "application/json", "{\"status\":\"scenes received\"}");
+    Serial.println("Settings saved:");
+    Serial.println(savedSettings);
+    
+    // Send success response
+    server.send(200, "text/plain", "Settings saved successfully");
   } else {
-    server.send(400, "application/json", "{\"status\":\"no body received\"}");
+    server.send(400, "text/plain", "No data received");
   }
+}
+
+// Function to handle resetting settings
+void handleResetSettings() {
+  // Example of resetting to default values (you can define your own defaults)
+  savedSettings = "";
+  
+  Serial.println("Settings reset to defaults.");
+  
+  // Send success response
+  server.send(200, "text/plain", "Settings reset successfully");
 }
 
 void startWebServer() {
@@ -312,7 +312,8 @@ void startWebServer() {
   server.on("/previewSleepSound", HTTP_POST, previewSleepSound);
   server.on("/searchForBridge", HTTP_POST, handleSearchForBridge);
   server.on("/addManually", HTTP_POST, handleAddManually);
-  server.on("/submitScenes", HTTP_POST, handleSubmitScenes);
+  server.on("/saveSettings", HTTP_POST, handleSaveSettings);
+  server.on("/resetSettings", HTTP_POST, handleResetSettings);
 
   // server.on("/toggleLED", HTTP_GET, toggleLED);
 

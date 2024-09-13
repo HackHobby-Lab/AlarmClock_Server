@@ -140,6 +140,7 @@
       document.getElementById('sleepSound').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.add('hidden');
       document.getElementById('philipsHueSettings').classList.add('hidden');
+      document.getElementById('mainUI').classList.add('hidden');
       document.getElementById('advancedSettings').classList.add('hidden');
       document.getElementById('smartHomeSettings').classList.remove('hidden');
     }
@@ -295,12 +296,14 @@
       document.getElementById('advancedSettings').classList.add('hidden');
       document.getElementById('manualIpInput').classList.add('hidden');
       document.getElementById('hueFeedback').classList.add('hidden');
+      document.getElementById('mainUI').classList.add('hidden');
     }
 
     // Function to handle the "Advanced" button click
     function advanced() {
       document.getElementById('philipsHueSettings').classList.add('hidden');
       document.getElementById('advancedSettings').classList.remove('hidden');
+      document.getElementById('mainUI').classList.add('hidden');
     }
 
     // Function to handle "Search for bridge" button click
@@ -324,6 +327,7 @@
       })
       .then(data => {
         feedbackElement.textContent = 'Bridge found at IP: ' + data;
+        bridgeConnected(); // Call function to show set Philips Hue Light
       })
       .catch(error => {
         feedbackElement.textContent = error.message;
@@ -340,6 +344,8 @@
     function submitIp() {
       const ip = document.getElementById('bridgeIp').value;
       const feedbackElement = document.getElementById('hueFeedback');
+
+      console.log("Submitting IP:", ip);
       
       fetch('/addManually', {
         method: 'POST',
@@ -348,44 +354,120 @@
         },
         body: JSON.stringify({ ip: ip })
       })
-      .then(response => response.text())
+      .then(response => {
+        console.log("Response received:", response);
+        
+        // Check if the response status is 200 (OK) or handle errors
+        if (response.ok) {
+          return response.text(); // Proceed to read the response body as text
+        } else {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+      })
       .then(data => {
-        feedbackElement.textContent = 'Bridge added successfully!';
+        console.log("Data received:", data);
+
+        feedbackElement.textContent = data;  // Use the server's response message
         feedbackElement.classList.remove('hidden');
+        
+        // Hide manual IP input section
         document.getElementById('manualIpInput').classList.add('hidden');
+        
+        // Call the function to show Philips Hue Light setup
+        bridgeConnected();
       })
       .catch(error => {
+        // Show specific error message
         feedbackElement.textContent = 'Failed to add bridge. Please check the IP and try again.';
         feedbackElement.classList.remove('hidden');
         console.error('Error:', error);
       });
     }
 
-    // Function to submit the selected wake up and sleep scenes
-    function submitScenes() {
-      const wakeScene = document.getElementById('wakeScene').value;
-      const sleepScene = document.getElementById('sleepScene').value;
+    // Function to handle the successful bridge connection
+    function bridgeConnected() {
+      // Hide the connection settings and show the main UI
+      document.getElementById('philipsHueSettings').classList.add('hidden');
+      document.getElementById('mainUI').classList.remove('hidden');
+      console.log("Bridge connected successfully! Main UI visible.");
+    }
 
-      // alert("Wakeup Scene: " + wakeScene + "\nSleep Scene: " + sleepScene);
-      
-      // Send the selected scenes to the server (replace with actual logic)
-      fetch('/submitScenes', {
+    // Function to save settings
+    function saveSettings() {
+      // Collect current settings
+      const hueToggle = document.getElementById('hueToggle').checked;
+      const wakeUpScene = document.getElementById('wakeUpScene').value;
+      const fadeStart = document.getElementById('fadeStart').value;
+      const customButton = document.querySelector('input[name="customButton"]:checked').value;
+      const customScene = document.getElementById('customScene').value;
+      const fadeInCustom = document.getElementById('fadeInCustom').value;
+
+      // Create a settings object
+      const settings = {
+        hueToggle,
+        wakeUpScene,
+        fadeStart,
+        customButton,
+        customScene,
+        fadeInCustom,
+      };
+
+      // Send settings to the server
+      fetch('/saveSettings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          wakeScene: wakeScene,
-          sleepScene: sleepScene
-        })
+        body: JSON.stringify(settings)
       })
       .then(response => response.text())
       .then(data => {
-        console.log("Scenes submitted:", data);
+        console.log(data);
+        alert(data);
       })
       .catch(error => {
-        console.error("Error submitting scenes:", error);
+        console.error('Error:', error);
+        alert('Failed to save settings');
       });
+    }
+
+    // Function to reset settings
+    function resetSettings() {
+      fetch('/resetSettings', {
+        method: 'POST'
+      })
+      .then(response => response.text())
+      .then(data => {
+        console.log(data);
+        alert(data);
+
+          // Reset toggle
+          document.getElementById('hueToggle').checked = true;
+
+          // Reset wake-up scene selection
+          document.getElementById('wakeUpScene').value = 'morning';
+
+          // Reset trigger radio buttons
+          document.getElementById('alarmTime').checked = true;
+          document.getElementById('alarmOff').checked = false;
+
+          // Reset fade start slider
+          document.getElementById('fadeStart').value = 30;
+
+          // Reset custom buttons radio
+          document.getElementById('button1').checked = true;
+          document.getElementById('button2').checked = false;
+
+          // Reset custom scene selection
+          document.getElementById('customScene').value = 'night';
+
+          // Reset fade-in slider for custom buttons
+          document.getElementById('fadeInCustom').value = 30;
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Failed to reset settings');
+        });
     }
 
     function addAlarm(event) {
@@ -599,7 +681,7 @@
     </div>
 
     <!-- Scene Selection Section -->
-    <div id="sceneSettings" class="content">
+    <!-- <div id="sceneSettings" class="content">
       <h3>Scene to activate on wake-up</h3>
       <select id="wakeScene">
         <option value="Good morning scene">Good morning scene</option>
@@ -615,9 +697,74 @@
       </select><br><br>
 
       <button onclick="submitScenes()">Submit Scenes</button>
-    </div>
+    </div> -->
 
   </div>
+
+<!-- Main UI Section (Hidden until successful connection) -->
+<div id="mainUI" class="hidden">
+  <h3>Philips Hue Control Panel</h3>
+
+  <!-- Toggle Philips Hue Connection -->
+  <label for="hueToggle">Philips Hue</label>
+  <input type="checkbox" id="hueToggle" checked>
+
+  <!-- Scene to activate on wake-up -->
+  <div>
+      <label for="wakeUpScene">Scene to activate on wake-up</label>
+      <select id="wakeUpScene">
+          <option value="morning">Good morning scene</option>
+          <option value="evening">Good evening scene</option>
+          <option value="night">Good night scene</option>
+      </select>
+  </div>
+
+  <!-- Trigger options -->
+  <div>
+      <label>Trigger on</label>
+      <input type="radio" id="alarmTime" name="trigger" value="alarmTime" checked>
+      <label for="alarmTime">Alarm Time</label>
+
+      <input type="radio" id="alarmOff" name="trigger" value="alarmOff">
+      <label for="alarmOff">Alarm turn off</label>
+  </div>
+
+  <!-- Start fade control -->
+  <div>
+      <label for="fadeStart">Start fade in 30 sec before</label>
+      <input type="range" id="fadeStart" min="0" max="60" value="30">
+  </div>
+
+  <!-- Custom buttons -->
+  <div>
+      <label>Custom buttons</label>
+      <input type="radio" id="button1" name="customButton" value="button1" checked>
+      <label for="button1">Button 1</label>
+
+      <input type="radio" id="button2" name="customButton" value="button2">
+      <label for="button2">Button 2</label>
+  </div>
+
+  <!-- Scene to activate for custom buttons -->
+  <div>
+      <label for="customScene">Scene to activate</label>
+      <select id="customScene">
+          <option value="night">Good night scene</option>
+          <option value="reading">Reading scene</option>
+          <option value="relax">Relax scene</option>
+      </select>
+  </div>
+
+  <!-- Fade-in control for custom buttons -->
+  <div>
+      <label for="fadeInCustom">Fade in for 30 sec</label>
+      <input type="range" id="fadeInCustom" min="0" max="60" value="30">
+  </div>
+
+  <!-- Reset and Save Settings Buttons -->
+  <button onclick="saveSettings()">Save Settings</button>
+  <button onclick="resetSettings()">Reset all settings</button>
+</div>
 
 </body>
 
