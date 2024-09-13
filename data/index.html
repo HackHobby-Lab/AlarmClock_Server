@@ -360,6 +360,7 @@
         // Check if the response status is 200 (OK) or handle errors
         if (response.ok) {
           return response.text(); // Proceed to read the response body as text
+          fetchScenes();
         } else {
           throw new Error(`Server error: ${response.status} ${response.statusText}`);
         }
@@ -372,7 +373,7 @@
         
         // Hide manual IP input section
         document.getElementById('manualIpInput').classList.add('hidden');
-        
+        setInterval(fetchScenes, 30000);  // 30000ms = 30 seconds
         // Call the function to show Philips Hue Light setup
         bridgeConnected();
       })
@@ -396,7 +397,7 @@
     function saveSettings() {
       // Collect current settings
       const hueToggle = document.getElementById('hueToggle').checked;
-      const wakeUpScene = document.getElementById('wakeUpScene').value;
+      const Scenes = document.getElementById('Scenes').value;
       const fadeStart = document.getElementById('fadeStart').value;
       const customButton = document.querySelector('input[name="customButton"]:checked').value;
       const customScene = document.getElementById('customScene').value;
@@ -405,7 +406,7 @@
       // Create a settings object
       const settings = {
         hueToggle,
-        wakeUpScene,
+        Scenes,
         fadeStart,
         customButton,
         customScene,
@@ -445,7 +446,7 @@
           document.getElementById('hueToggle').checked = true;
 
           // Reset wake-up scene selection
-          document.getElementById('wakeUpScene').value = 'morning';
+          document.getElementById('Scenes').value = '';
 
           // Reset trigger radio buttons
           document.getElementById('alarmTime').checked = true;
@@ -459,7 +460,7 @@
           document.getElementById('button2').checked = false;
 
           // Reset custom scene selection
-          document.getElementById('customScene').value = 'night';
+          document.getElementById('customScene').value = '';
 
           // Reset fade-in slider for custom buttons
           document.getElementById('fadeInCustom').value = 30;
@@ -470,6 +471,47 @@
         });
     }
 
+    let previousScenes = []; // To keep track of previously fetched scenes
+
+// Function to fetch scenes from the ESP32 and update the dropdown menus
+function fetchScenes() {
+  fetch('/fetchScenes', { method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }})
+    .then(response => response.json())
+    .then(data => {
+      const scenes = data.scenes;  // Array of scenes
+      const ScenesSelect = document.getElementById('Scenes');
+      const customSceneSelect = document.getElementById('customScene');
+
+      // Check if there are new scenes compared to the previous fetch
+      if (JSON.stringify(scenes) !== JSON.stringify(previousScenes)) {
+        // Clear the current options if scenes are updated
+        ScenesSelect.innerHTML = '';
+        customSceneSelect.innerHTML = '';
+
+        // Populate the dropdowns with the fetched scenes
+        scenes.forEach(scene => {
+          const option = document.createElement('option');
+          option.value = scene;
+          option.textContent = scene;
+
+          // Append to both wake-up and custom scene dropdowns
+          ScenesSelect.appendChild(option.cloneNode(true));
+          customSceneSelect.appendChild(option);
+        });
+
+        // Update the previous scenes list
+        previousScenes = scenes;
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching scenes:', error);
+      // alert('Failed to fetch scenes from the Hue Bridge.');
+    });
+}
+// setInterval(fetchScenes, 30000);  // 30000ms = 30 seconds
     function addAlarm(event) {
       event.preventDefault();
 
@@ -537,6 +579,10 @@
     window.onload = function () {
       fetchWiFiStatus();
       scanNetworks();
+      // fetchScenes();  // Initial fetch on page load
+
+      // Automatically fetch scenes every 30 seconds
+     
     };
   </script>
 </head>
@@ -711,11 +757,8 @@
 
   <!-- Scene to activate on wake-up -->
   <div>
-      <label for="wakeUpScene">Scene to activate on wake-up</label>
-      <select id="wakeUpScene">
-          <option value="morning">Good morning scene</option>
-          <option value="evening">Good evening scene</option>
-          <option value="night">Good night scene</option>
+      <label for="Scenes">Scene to activate on wake-up</label>
+      <select id="Scenes">
       </select>
   </div>
 
@@ -749,9 +792,7 @@
   <div>
       <label for="customScene">Scene to activate</label>
       <select id="customScene">
-          <option value="night">Good night scene</option>
-          <option value="reading">Reading scene</option>
-          <option value="relax">Relax scene</option>
+
       </select>
   </div>
 
