@@ -649,9 +649,10 @@
     setInterval(showCurrentTime, 1000); // Update time every second
 
     window.onload = function () {
+      fetchSavedAlarm();
       fetchWiFiStatus();
       scanNetworks();
-      fetchSavedAlarm();
+      
     };
   </script>
 </head>
