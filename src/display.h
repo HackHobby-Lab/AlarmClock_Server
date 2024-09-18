@@ -9,6 +9,8 @@
 #include <EEPROM.h>
 #include <stdlib.h>
 
+extern int AlarmHH , AlarmMM, AlarmSS;
+
 // Function prototypes
 void setupPeripheral();
 void updateEncoder();

@@ -60,7 +60,10 @@ bool wifiConnected = false;
 
 void setupPeripheral() {
   EEPROM.begin(EEPROM_SIZE);
+
   FPSerial.begin(9600, SERIAL_8N1, /*rx =*/ 17, /*tx =*/ 18);
+
+  
   
   // Set button pins as inputs with internal pull-up resistors
   pinMode(alarmButtonPin, INPUT);
@@ -916,6 +919,7 @@ void setAlarmTime(int hour, int minute, int second, bool alarmIsPM) {
     Serial.print(":");
     Serial.print(second);
     Serial.println(alarmIsPM ? " PM" : " AM");
+    writeEEPROM();
 }
 
 

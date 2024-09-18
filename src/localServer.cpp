@@ -520,6 +520,15 @@ void startWebServer()
     file.close();
 
     server.send(200, "text/html", htmlContent); });
+
+
+  // Web server endpoint to return the saved alarm
+  server.on("/getAlarm", HTTP_GET, [](){
+    
+    readEEPROM();  // Fetch alarm data from EEPROM
+    String alarmTime = String(AlarmHH) + ":" + String(AlarmMM);
+    server.send(200, "text/plain", alarmTime);  // Send the alarm time as a response
+  });
   // Define web routes
   server.on("/toggleLED", toggleLED);
   server.on("/setBrightness", setBrightness);
