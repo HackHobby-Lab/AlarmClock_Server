@@ -37,17 +37,29 @@
   </style>
   <script>
     let alarms = [];
+    let alarm = null; 
 
     function showWelcomeScreen() {
-      document.getElementById('WelcomeScreen').classList.remove('hidden');
+      // document.getElementById('WelcomeScreen').classList.remove('hidden');
+
+     document.getElementById('WelcomeScreen').classList.add('hidden');
       document.getElementById('ScheduleScreen').classList.add('hidden');
-      document.getElementById('dateTimeSettings').classList.add('hidden');
+      document.getElementById('alarmSettings').classList.remove('hidden');
       document.getElementById('wifiSettings').classList.add('hidden');
       document.getElementById('ledControl').classList.add('hidden');
-      document.getElementById('alarmSettings').classList.add('hidden');
+      document.getElementById('dateTimeSettings').classList.add('hidden');
       document.getElementById('sleepSound').classList.add('hidden');
       document.getElementById('wakeupSound').classList.add('hidden');
       document.getElementById('smartHomeSettings').classList.add('hidden');
+      
+      // document.getElementById('ScheduleScreen').classList.add('hidden');
+      // document.getElementById('dateTimeSettings').classList.add('hidden');
+      // document.getElementById('wifiSettings').classList.add('hidden');
+      // document.getElementById('ledControl').classList.add('hidden');
+      // document.getElementById('alarmSettings').classList.add('hidden');
+      // document.getElementById('sleepSound').classList.add('hidden');
+      // document.getElementById('wakeupSound').classList.add('hidden');
+      // document.getElementById('smartHomeSettings').classList.add('hidden');
     }
 
     function showScheduleScreen() {
@@ -67,6 +79,7 @@
       document.getElementById('ScheduleScreen').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.remove('hidden');
       document.getElementById('wifiSettings').classList.remove('hidden');
+      document.getElementById('WelcomeScreen').classList.remove('hidden');
       document.getElementById('ledControl').classList.add('hidden');
       document.getElementById('alarmSettings').classList.add('hidden');
       document.getElementById('sleepSound').classList.add('hidden');
@@ -94,17 +107,19 @@
     //   document.getElementById('alarmSettings').classList.add('hidden');
     // }
 
-    function showAlarmSettings() {
-      document.getElementById('WelcomeScreen').classList.add('hidden');
-      document.getElementById('ScheduleScreen').classList.add('hidden');
-      document.getElementById('alarmSettings').classList.remove('hidden');
-      document.getElementById('wifiSettings').classList.add('hidden');
-      document.getElementById('ledControl').classList.add('hidden');
-      document.getElementById('dateTimeSettings').classList.add('hidden');
-      document.getElementById('sleepSound').classList.add('hidden');
-      document.getElementById('wakeupSound').classList.add('hidden');
-      document.getElementById('smartHomeSettings').classList.add('hidden');
-    }
+    // function showAlarmSettings() {
+    //   // document.getElementById('WelcomeScreen').classList.add('hidden');
+    //   // document.getElementById('ScheduleScreen').classList.add('hidden');
+    //   // document.getElementById('alarmSettings').classList.remove('hidden');
+    //   // document.getElementById('wifiSettings').classList.add('hidden');
+    //   // document.getElementById('ledControl').classList.add('hidden');
+    //   // document.getElementById('dateTimeSettings').classList.add('hidden');
+    //   // document.getElementById('sleepSound').classList.add('hidden');
+    //   // document.getElementById('wakeupSound').classList.add('hidden');
+    //   // document.getElementById('smartHomeSettings').classList.add('hidden');
+
+      
+    // }
 
     function showWakeupSound() {
       document.getElementById('WelcomeScreen').classList.add('hidden');
@@ -144,6 +159,7 @@
       document.getElementById('advancedSettings').classList.add('hidden');
       document.getElementById('smartHomeSettings').classList.remove('hidden');
     }
+
 
     function scanNetworks() {
       fetch('/scan')
@@ -299,12 +315,14 @@
       document.getElementById('mainUI').classList.add('hidden');
     }
 
+
     // Function to handle the "Advanced" button click
     function advanced() {
       document.getElementById('philipsHueSettings').classList.add('hidden');
       document.getElementById('advancedSettings').classList.remove('hidden');
       document.getElementById('mainUI').classList.add('hidden');
     }
+
 
     // Function to handle "Search for bridge" button click
     function searchForBridge() {
@@ -356,17 +374,20 @@
       })
       .then(response => {
         console.log("Response received:", response);
+        fetchScenes();
         
         // Check if the response status is 200 (OK) or handle errors
         if (response.ok) {
-          return response.text(); // Proceed to read the response body as text
           fetchScenes();
+          return response.text(); // Proceed to read the response body as text
+          
         } else {
           throw new Error(`Server error: ${response.status} ${response.statusText}`);
         }
       })
       .then(data => {
         console.log("Data received:", data);
+        fetchScenes();
 
         feedbackElement.textContent = data;  // Use the server's response message
         feedbackElement.classList.remove('hidden');
@@ -390,8 +411,10 @@
       // Hide the connection settings and show the main UI
       document.getElementById('philipsHueSettings').classList.add('hidden');
       document.getElementById('mainUI').classList.remove('hidden');
+      fetchScenes();
       console.log("Bridge connected successfully! Main UI visible.");
     }
+
 
     // Function to save settings
     function saveSettings() {
@@ -471,7 +494,77 @@
         });
     }
 
+
+    
     let previousScenes = []; // To keep track of previously fetched scenes
+
+// Function to fetch scenes from the ESP32 and update the dropdown menus
+    function fetchScenes() {
+  fetch('/fetchScenes', { method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }})
+    .then(response => response.json())
+    .then(data => {
+      const scenes = data.scenes;  // Array of scenes
+      const ScenesSelect = document.getElementById('Scenes');
+      const customSceneSelect = document.getElementById('customScene');
+
+      // Check if there are new scenes compared to the previous fetch
+      if (JSON.stringify(scenes) !== JSON.stringify(previousScenes)) {
+        // Clear the current options if scenes are updated
+        ScenesSelect.innerHTML = '';
+        customSceneSelect.innerHTML = '';
+
+        // Populate the dropdowns with the fetched scenes
+        scenes.forEach(scene => {
+          const option = document.createElement('option');
+          option.value = scene;
+          option.textContent = scene;
+
+          // Append to both wake-up and custom scene dropdowns
+          ScenesSelect.appendChild(option.cloneNode(true));
+          customSceneSelect.appendChild(option);
+        });
+
+        // Update the previous scenes list
+        previousScenes = scenes;
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching scenes:', error);
+      // alert('Failed to fetch scenes from the Hue Bridge.');
+    });
+}
+
+    // // Function to submit the selected wake up and sleep scenes
+    // function submitScenes() {
+    //   const wakeScene = document.getElementById('wakeScene').value;
+    //   const sleepScene = document.getElementById('sleepScene').value;
+
+    //   // alert("Wakeup Scene: " + wakeScene + "\nSleep Scene: " + sleepScene);
+      
+    //   // Send the selected scenes to the server (replace with actual logic)
+    //   fetch('/submitScenes', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({
+    //       wakeScene: wakeScene,
+    //       sleepScene: sleepScene
+    //     })
+    //   })
+    //   .then(response => response.text())
+    //   .then(data => {
+    //     console.log("Scenes submitted:", data);
+    //   })
+    //   .catch(error => {
+    //     console.error("Error submitting scenes:", error);
+    //   });
+    // }
+
+    // let previousScenes = []; // To keep track of previously fetched scenes
 
 // Function to fetch scenes from the ESP32 and update the dropdown menus
 function fetchScenes() {
@@ -514,12 +607,19 @@ function fetchScenes() {
 // setInterval(fetchScenes, 30000);  // 30000ms = 30 seconds
     function addAlarm(event) {
       event.preventDefault();
+      if (alarm !== null) {
+      alert("Only one alarm can be set at a time. Please delete the current alarm first.");
+      return;
+    }
 
+      // let alarmDate = document.getElementById('alarmDate').value;
       let alarmTime = document.getElementById('alarmTime').value;
-      let alarmId = Date.now();
+      let alarmId = "alarm";
+      
 
-      let alarm = { id: alarmId, time: `${alarmTime}` };
-      //alarms.push(alarm);
+      alarm = { id: alarmId, time: alarmTime };
+      alarms.push(alarm);
+      updateAlarmList();
 
       fetch('/addAlarm', {
         method: 'POST',
@@ -528,19 +628,9 @@ function fetchScenes() {
         },
         body: `alarmTime=${encodeURIComponent(alarmTime)}`
       })
-        .then(response => response.text())
-        .then(data => alert(data))
-        .catch(error => console.error('Error:', error));
-    }
-
-    function showCurrentTime() {
-      const now = new Date();
-      const hours = now.getHours() % 12 || 12; // Convert 24-hour format to 12-hour
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const amPm = now.getHours() >= 12 ? 'PM' : 'AM';
-
-      const currentTime = `${hours}:${minutes} ${amPm}`;
-      document.getElementById('currentTime').innerText = `Current Time: ${currentTime}`;
+      .then(response => response.text())
+      .then(data => alert(data))
+      .catch(error => console.error('Error:', error));
     }
 
     function deleteAlarm(alarmId) {
@@ -554,35 +644,57 @@ function fetchScenes() {
         },
         body: `alarmId=${encodeURIComponent(alarmId)}`
       })
-        .then(response => response.text())
-        .then(data => alert(data))
-        .catch(error => console.error('Error:', error));
+      .then(response => response.text())
+      .then(data => alert(data))
+      .catch(error => console.error('Error:', error));
     }
 
     function updateAlarmList() {
-      let alarmList = document.getElementById('alarmList');
-      alarmList.innerHTML = '';
+    let alarmList = document.getElementById('alarmList');
+    alarmList.innerHTML = '';
 
-      alarms.forEach(alarm => {
-        let listItem = document.createElement('li');
-        listItem.textContent = `${alarm.time}`;
-        let deleteButton = document.createElement('button');
-        deleteButton.textContent = 'Delete';
-        deleteButton.onclick = () => deleteAlarm(alarm.id);
-        listItem.appendChild(deleteButton);
-        alarmList.appendChild(listItem);
-      });
+    if (alarm !== null) {
+      let listItem = document.createElement('li');
+      listItem.textContent = `${alarm.HH}:${alarm.MM}`;
+      let deleteButton = document.createElement('button');
+      deleteButton.textContent = 'Delete';
+      deleteButton.onclick = deleteAlarm;
+      listItem.appendChild(deleteButton);
+      alarmList.appendChild(listItem);
+    }
+  }
+  function fetchSavedAlarm() {
+    fetch('/getAlarm')
+    .then(response => response.text())
+    .then(data => {
+      if (data) {
+        let [alarmTime] = data.split(' ');
+        let [HH, MM] = alarmTime.split(':');
+
+        alarm = { HH: HH, MM: MM};
+        updateAlarmList();
+      }
+    })
+    .catch(error => console.error('Error fetching alarm:', error));
+  }
+
+    function showCurrentTime() {
+      const now = new Date();
+      const hours = now.getHours() % 12 || 12; // Convert 24-hour format to 12-hour
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const amPm = now.getHours() >= 12 ? 'PM' : 'AM';
+
+      const currentTime = `${hours}:${minutes} ${amPm}`;
+      document.getElementById('currentTime').innerText = `Current Time: ${currentTime}`;
     }
 
     setInterval(showCurrentTime, 1000); // Update time every second
 
     window.onload = function () {
+      fetchSavedAlarm();
       fetchWiFiStatus();
       scanNetworks();
-      // fetchScenes();  // Initial fetch on page load
-
-      // Automatically fetch scenes every 30 seconds
-     
+      
     };
   </script>
 </head>
@@ -597,7 +709,7 @@ function fetchScenes() {
     <button onclick="showWiFiSettings()">System Settings</button>
     <button onclick="showLEDControl()">LED Control</button>
     <!-- <button onclick="showDateTimeSettings()">Date & Time Settings</button> -->
-    <button onclick="showAlarmSettings()">Alarm Settings</button>
+    <!-- <button onclick="showAlarmSettings()">Alarm Settings</button> -->
     <button onclick="showWakeupSound()">Wake-up Sound</button>
     <button onclick="showSleepSound()">Sleep Sound</button>
     <button onclick="showSmartHomeSettings()">Smart Home Settings</button>
@@ -605,7 +717,7 @@ function fetchScenes() {
 
   <!-- Welcome Screen Section -->
   <div id="WelcomeScreen" class="content hidden">
-    <p>IP Address: <span id="ipAddress">N/A</span></p>
+    <!-- <p>IP Address: <span id="ipAddress">N/A</span></p> -->
   </div>
 
   <!-- Schedule Screen Section -->
@@ -643,7 +755,7 @@ function fetchScenes() {
     </form>
     <h2>Current Wi-Fi Status</h2>
     <p>Connected Network: <span id="connectedNetwork">Not connected</span></p>
-    <!-- <p>IP Address: <span id="ipAddress">N/A</span></p> -->
+    <p>IP Address: <span id="ipAddress">N/A</span></p>
   </div>
 
   <!-- LED Control Section -->
@@ -661,6 +773,10 @@ function fetchScenes() {
       <input type="time" id="alarmTime" required>
       <button type="submit">Set Alarm</button>
     </form>
+    <!-- <h2>Set Alarms</h2> -->
+    <ul id="alarmList" class="alarm-list">
+      <!-- Alarms will be dynamically added here -->
+    </ul>
   </div>
 
   <!-- Wake-up Sound Section -->
@@ -674,7 +790,7 @@ function fetchScenes() {
     </select>
 
     <label for="wakeupVolume">Volume:</label>
-    <input type="range" id="wakeupVolume" name="volume" min="0" max="255" oninput="changeVolume(this.value)">
+    <input type="range" id="wakeupVolume" name="volume" min="0" max="100" oninput="changeVolume(this.value)">
 
     <button class="preview-button" onclick="previewWakeupSound()">Preview</button>
   </div>
@@ -716,6 +832,7 @@ function fetchScenes() {
         <p>Enter the IP address of your Philips Hue Bridge:</p>
         <input type="text" id="bridgeIp" placeholder="192.168.x.x">
         <button onclick="submitIp()">Submit</button>
+      <div id="loading" class="hidden">Press the Link button on bridge</div>
       </div>
     </div>
 
@@ -726,8 +843,8 @@ function fetchScenes() {
       <!-- Add MQTT settings or information here -->
     </div>
 
-    <!-- Scene Selection Section -->
-    <!-- <div id="sceneSettings" class="content">
+    <!-- Scene Selection Section
+    <div id="sceneSettings" class="content">
       <h3>Scene to activate on wake-up</h3>
       <select id="wakeScene">
         <option value="Good morning scene">Good morning scene</option>
@@ -747,13 +864,15 @@ function fetchScenes() {
 
   </div>
 
+
+  
 <!-- Main UI Section (Hidden until successful connection) -->
 <div id="mainUI" class="hidden">
   <h3>Philips Hue Control Panel</h3>
 
   <!-- Toggle Philips Hue Connection -->
   <label for="hueToggle">Philips Hue</label>
-  <input type="checkbox" id="hueToggle" checked>
+  <input type="radio" id="hueToggle" name="Hue-Disconnect" value="HueConnection" checked>
 
   <!-- Scene to activate on wake-up -->
   <div>
@@ -792,7 +911,6 @@ function fetchScenes() {
   <div>
       <label for="customScene">Scene to activate</label>
       <select id="customScene">
-
       </select>
   </div>
 

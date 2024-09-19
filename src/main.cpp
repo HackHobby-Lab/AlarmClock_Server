@@ -1,11 +1,14 @@
-#include <Arduino.h>
+// #include <Arduino.h>
 #include <WiFi.h>
-
 #include "localServer.h"
+#include "Display.h"
+
+
 
 
 void setup_wifi() {
   delay(10);
+  setupPeripheral();
   Serial.println();
   preferences.begin("wifi", false); // REVISIT: Already initialized
 
@@ -79,4 +82,5 @@ void setup() {
 
 void loop() {
   server.handleClient();
+  displayClock();
 }
