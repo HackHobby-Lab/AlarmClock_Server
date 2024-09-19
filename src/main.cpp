@@ -8,7 +8,7 @@
 
 void setup_wifi() {
   delay(10);
-  setupPeripheral();
+  // setupPeripheral(); // only for testing
   Serial.println();
   preferences.begin("wifi", false); // REVISIT: Already initialized
 
@@ -32,11 +32,10 @@ void setup_wifi() {
     // WiFi.config(local_IP, gateway, subnet); // Set static IP for STA mode
     WiFi.begin(ssid.c_str(), password.c_str());
     Serial.printf("Connecting to WiFi SSID: %s \n", ssid.c_str());
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED) {
+    
+    while (WiFi.status() != WL_CONNECTED && (millis() - startAttemptTime) < wifiTimeout) {
       delay(500);
       Serial.print(".");
-      attempts++;
     }
 
     if (WiFi.status() == WL_CONNECTED) {
@@ -49,8 +48,9 @@ void setup_wifi() {
       startWebServer();
 
     } else {
-      Serial.println("Failed to connect to WiFi, starting AP mode.");
-      startAPMode();
+      Serial.println("Failed to connect to WiFi, Restarting ESP32...");
+      delay(1000); 
+      ESP.restart();
     }
   } else {
     startAPMode();
@@ -82,5 +82,5 @@ void setup() {
 
 void loop() {
   server.handleClient();
-  displayClock();
+  // displayClock(); // only for testing
 }
