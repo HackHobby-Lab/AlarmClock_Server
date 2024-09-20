@@ -26,6 +26,9 @@ extern IPAddress ap_IP;
 extern const int ledPin;
 extern bool ledState;
 
+extern unsigned long startAttemptTime;
+extern const unsigned long wifiTimeout;  // 10 seconds timeout
+
 void toggleLED();
 void startWebServer();
 void startAPMode(); 

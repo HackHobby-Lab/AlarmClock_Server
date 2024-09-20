@@ -29,6 +29,9 @@ String apiUsername;
 const int lightID_1 = 1; // Light ID for wakeup
 const int lightID_2 = 2; // Light ID for sleep
 
+unsigned long startAttemptTime = 0;
+const unsigned long wifiTimeout = 10000;  // 10 seconds timeout
+
 void toggleLED()
 {
   ledState = !ledState;
@@ -567,17 +570,79 @@ void startWebServer()
     String json = "{\"ssid\":\"" + ssid + "\", \"ip\":\"" + ip + "\"}";
     server.send(200, "application/json", json); });
 
+  server.on("/checkWiFiStatus", HTTP_GET, []() 
+  {
+    DynamicJsonDocument doc(512);
+    if (WiFi.getMode() == WIFI_STA && WiFi.status() == WL_CONNECTED) {
+        doc["mode"] = "STA";
+        doc["connected"] = true;
+        doc["ssid"] = WiFi.SSID();
+        doc["ip"] = WiFi.localIP().toString();
+    } else {
+        doc["mode"] = "AP";
+        doc["connected"] = false;
+    }
+    String response;
+    serializeJson(doc, response);
+    server.send(200, "application/json", response); });
+
+    server.on("/disconnectWiFi", HTTP_POST, []() {
+      server.send(200, "text/plain", "Disconnected from Wi-Fi. Restarting...");
+      
+      WiFi.disconnect();  // Disconnect from the current Wi-Fi network
+      WiFi.mode(WIFI_AP); // Switch back to AP mode
+      Serial.println("Disconnected from Wi-Fi. Switched to AP mode.");
+      
+      // Clear saved SSID and password
+      preferences.remove("ssid");
+      preferences.remove("password");
+
+      delay(1000);  
+      ESP.restart();  // Restart the ESP32
+  });
+
   server.on("/setWiFi", HTTP_POST, []()
             {
     String newSSID = server.arg("ssid");
     String newPass = server.arg("pass");
 
-    preferences.putString("ssid", newSSID);
-    preferences.putString("password", newPass);
+        if (newSSID != "") {
+          // WiFi.config(local_IP, gateway, subnet); // Set static IP for STA mode
+          WiFi.begin(newSSID.c_str(), newPass.c_str());
+          Serial.printf("Connecting to WiFi SSID: %s \n", newSSID.c_str());
+          startAttemptTime = millis();
+          while (WiFi.status() != WL_CONNECTED && (millis() - startAttemptTime) < wifiTimeout) {
+            delay(500);
+            Serial.print(".");
+          }
 
-    server.send(200, "text/plain", "Settings saved, ESP will restart now.");
-    delay(1000);
-    ESP.restart(); });
+          if (WiFi.status() == WL_CONNECTED) {
+            Serial.print("\nConnected to WiFi\n");
+            Serial.println("IP address: ");
+            Serial.println(WiFi.localIP());
+
+            // Save Wi-Fi credentials in preferences
+            preferences.putInt("resetCount", 0); 
+            preferences.putString("ssid", newSSID);
+            preferences.putString("password", newPass);
+
+            // Send STA mode IP to client
+            String staIP = WiFi.localIP().toString();
+            delay(1000); // only for testing
+            server.send(200, "text/plain", "STA IP: " + staIP);
+
+            // Restart ESP to ensure it's fully switched to STA mode
+            delay(5000);
+            ESP.restart();
+
+          } else {
+            server.send(400, "text/plain", "Failed to connect to WiFi, Please retry.");
+          }
+        } else {
+          server.send(400, "text/plain", "Invalid ssid");
+        }
+
+     });
 
   server.begin();
   Serial.println("HTTP server started");

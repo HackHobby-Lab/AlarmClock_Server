@@ -40,9 +40,9 @@
     let alarm = null; 
 
     function showWelcomeScreen() {
-      // document.getElementById('WelcomeScreen').classList.remove('hidden');
+      document.getElementById('WelcomeScreen').classList.remove('hidden');
 
-     document.getElementById('WelcomeScreen').classList.add('hidden');
+    //  document.getElementById('WelcomeScreen').classList.add('hidden');
       document.getElementById('ScheduleScreen').classList.add('hidden');
       document.getElementById('alarmSettings').classList.remove('hidden');
       document.getElementById('wifiSettings').classList.add('hidden');
@@ -185,9 +185,29 @@
       document.getElementById('ssid').value = selectedSSID;
     }
 
+    document.addEventListener('DOMContentLoaded', function () {
+        // Fetch the Wi-Fi status from ESP32
+        fetch('/checkWiFiStatus')
+            .then(response => response.json())
+            .then(data => {
+                if (data.mode === "STA" && data.connected) {
+                    document.getElementById('wifiConfigSection').style.display = 'none';
+                    document.getElementById('wifiStatusSection').style.display = 'block';
+                    document.getElementById('connectedNetwork').innerText = data.ssid;
+                    document.getElementById('ipAddress').innerText = data.ip;
+                } else {
+                    document.getElementById('wifiConfigSection').style.display = 'block';
+                    document.getElementById('wifiStatusSection').style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    });
+
     function connectToNetwork() {
       let ssid = document.getElementById('ssid').value;
       let pass = document.getElementById('pass').value;
+      let statusMessage = document.getElementById('statusMessage');
+      statusMessage.innerText = "Please wait while we verify Wi-Fi credentials...";
 
       fetch('/setWiFi', {
         method: 'POST',
@@ -197,7 +217,32 @@
         body: `ssid=${encodeURIComponent(ssid)}&pass=${encodeURIComponent(pass)}`
       })
         .then(response => response.text())
-        .then(data => alert(data))
+        .then(data => {
+          alert(data);  // Show server response
+
+          if (data.includes("STA")) {
+            statusMessage.innerText = "Connected! Redirecting...";
+            // Extract STA IP from response
+            let staIP = data.split("STA IP: ")[1];
+            if (staIP) {
+              // Redirect to STA IP after successful connection
+              window.location.href = `http://${staIP}`;
+            }
+          } else {
+          statusMessage.innerText = data;
+        }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function disconnectFromWiFi() {
+        fetch('/disconnectWiFi', {
+            method: 'POST',
+        })
+        .then(response => response.text())
+        .then(data => {
+            alert(data); // Notify the user that ESP32 is restarting
+        })
         .catch(error => console.error('Error:', error));
     }
 
@@ -717,7 +762,7 @@ function fetchScenes() {
 
   <!-- Welcome Screen Section -->
   <div id="WelcomeScreen" class="content hidden">
-    <!-- <p>IP Address: <span id="ipAddress">N/A</span></p> -->
+    <div id="currentTime"></div>
   </div>
 
   <!-- Schedule Screen Section -->
@@ -742,20 +787,29 @@ function fetchScenes() {
 
   <!-- Wi-Fi Settings Section -->
   <div id="wifiSettings" class="content hidden">
-    <h2>Wi-Fi Configuration</h2>
-    <form onsubmit="connectToNetwork(); return false;">
-      <label for="ssid">SSID:</label><br>
-      <select id="ssidSelect" name="ssidSelect" onchange="updateSSIDField()">
-        <option>Select a network</option>
-      </select><br><br>
-      <input type="text" id="ssid" name="ssid" placeholder="Or enter SSID manually"><br><br>
-      <label for="pass">Password:</label><br>
-      <input type="password" id="pass" name="pass"><br><br>
-      <input type="submit" value="Connect">
-    </form>
-    <h2>Current Wi-Fi Status</h2>
-    <p>Connected Network: <span id="connectedNetwork">Not connected</span></p>
-    <p>IP Address: <span id="ipAddress">N/A</span></p>
+    <!-- Wi-Fi Configuration Section -->
+    <div id="wifiConfigSection">
+      <h2>Wi-Fi Configuration</h2>
+      <form onsubmit="connectToNetwork(); return false;">
+        <label for="ssid">SSID:</label><br>
+        <select id="ssidSelect" name="ssidSelect" onchange="updateSSIDField()">
+          <option>Select a network</option>
+        </select><br><br>
+        <input type="text" id="ssid" name="ssid" placeholder="Or enter SSID manually"><br><br>
+        <label for="pass">Password:</label><br>
+        <input type="password" id="pass" name="pass"><br><br>
+        <input type="submit" value="Connect">
+      </form>
+      <p id="statusMessage" style="color: black;"></p> <!-- Message display area -->
+    </div>
+    
+    <!-- Current Wi-Fi Status Section -->
+    <div id="wifiStatusSection" style="display: none;"> <!-- Initially hidden -->
+      <h2>Current Wi-Fi Status</h2>
+      <p>Connected Network: <span id="connectedNetwork">Not connected</span></p>
+      <p>IP Address: <span id="ipAddress">N/A</span></p>
+      <button onclick="disconnectFromWiFi()">Disconnect from Wi-Fi</button>
+    </div>
   </div>
 
   <!-- LED Control Section -->
