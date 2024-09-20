@@ -593,20 +593,22 @@
     }
 
     function deleteAlarm(alarmId) {
-      alarms = alarms.filter(alarm => alarm.id !== alarmId);
-      updateAlarmList();
+  alarms = alarms.filter(alarm => alarm.id !== alarmId);
+  alarm = null; // Reset the single alarm
+  
+  updateAlarmList();
 
-      fetch('/deleteAlarm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `alarmId=${encodeURIComponent(alarmId)}`
-      })
-      .then(response => response.text())
-      .then(data => alert(data))
-      .catch(error => console.error('Error:', error));
-    }
+  fetch('/deleteAlarm', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `alarmId=${encodeURIComponent(alarmId)}`
+  })
+  .then(response => response.text())
+  .then(data => alert(data))
+  .catch(error => console.error('Error:', error));
+}
 
     function updateAlarmList() {
       let alarmList = document.getElementById('alarmList');
@@ -617,7 +619,7 @@
         listItem.textContent = `${alarm.HH}:${alarm.MM}`;
         let deleteButton = document.createElement('button');
         deleteButton.textContent = 'Delete';
-        deleteButton.onclick = deleteAlarm;
+        deleteButton.onclick = () => deleteAlarm(alarm.id);
         listItem.appendChild(deleteButton);
         alarmList.appendChild(listItem);
       }

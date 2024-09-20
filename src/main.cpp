@@ -8,7 +8,7 @@
 
 void setup_wifi() {
   delay(10);
-  // setupPeripheral(); // only for testing
+  setupPeripheral(); // only for testing
   Serial.println();
   preferences.begin("wifi", false); // REVISIT: Already initialized
 
@@ -82,5 +82,5 @@ void setup() {
 
 void loop() {
   server.handleClient();
-  // displayClock(); // only for testing
+  displayClock(); // only for testing
 }

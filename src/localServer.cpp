@@ -90,6 +90,15 @@ void setAlarm() {
   }
 }
 
+void deleteAlarm(){
+  Serial.println("Deleting");
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+    bool isPM = false;
+  setAlarmTime(hour, minute, second, isPM);
+}
+
 void setAmPm() {
   if (server.hasArg("amPmValue")) {
     Serial.println("AM/PM");
@@ -605,6 +614,7 @@ void startWebServer() {
   server.on("/setBrightness", setBrightness);
   server.on("/setDateTime", setDateTime);
   server.on("/addAlarm", setAlarm);
+   server.on("/deleteAlarm", deleteAlarm);
   server.on("/amPmValue", setAmPm);
   server.on("/changeVolume", changeVolume);
   server.on("/setWakeupSound", setWakeupSound);
