@@ -407,7 +407,8 @@ int GetStringWidth(const char *text, int font) {
 }
 
 void toggleAlarm() {
-  if (alarmTriggered) {
+  if (alarmTriggered|| alarmEnabled) {
+    alarmEnabled = false;
     alarmTriggered = false;
     Serial.println("Alarm deactivated.");
 

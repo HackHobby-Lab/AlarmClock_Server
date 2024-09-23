@@ -777,22 +777,6 @@
   <!-- Date and Time Settings Section -->
   <div id="dateTimeSettings" class="content hidden">
     <div id="currentTime"></div>
-    <div>
-      <!-- Label for alarm time -->
-      <label for="alarmTimeInput">Alarm time</label>
-    
-      <!-- Input for alarm time (editable) -->
-      <input type="time" id="alarmTimeInput">
-    
-      <!-- Toggle for alarm (on/off switch) -->
-      <label class="switch">
-        <input type="checkbox" id="alarmToggle">
-        <span class="slider"></span>
-      </label>
-    </div>
-    
-    <!-- Button to update alarm settings -->
-    <button onclick="updateAlarm()">Update Alarm</button>
     
     <h2>Date & Time Settings</h2>
     <form onsubmit="setDateTime(event); return false;">
@@ -843,15 +827,35 @@
 
   <div id="alarmSettings" class="content hidden">
     <div id="currentTime"></div>
-    <form onsubmit="addAlarm(event)">
+    <!-- <form onsubmit="addAlarm(event)">
       <label for="alarmTime">Select Time:</label>
       <input type="time" id="alarmTime" required>
       <button type="submit">Set Alarm</button>
     </form>
-    <!-- <h2>Set Alarms</h2> -->
+    <h2>Set Alarms</h2> -->
+
+
+    <div>
+      <!-- Label for alarm time -->
+      <label for="alarmTimeInput">Alarm time</label>
+    
+      <!-- Input for alarm time (editable) -->
+      <input type="time" id="alarmTimeInput">
+    
+      <!-- Toggle for alarm (on/off switch) -->
+      <label class="switch">
+        <input type="checkbox" id="alarmToggle">
+        <span class="slider"></span>
+      </label>
+
+    </div>
+    
+    <!-- Button to update alarm settings -->
+    <button onclick="updateAlarm()">Update Alarm</button>
     <ul id="alarmList" class="alarm-list">
       <!-- Alarms will be dynamically added here -->
     </ul>
+    
   </div>
 
   <!-- Wake-up Sound Section -->

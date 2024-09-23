@@ -22,6 +22,7 @@ bool ledState = false;
 
 bool atAlarmTrigger = false;
 bool  atAlarmStop = false;
+ bool alarmEnabled = false;
 String savedSettings;
 
 // Hue Emulator details
@@ -137,7 +138,11 @@ void updateAlarm() {
 
         String alarmTime = doc["time"];
         bool alarmEnabled = doc["enabled"];
-
+        if (alarmEnabled == 1){
+           alarmEnabled = true;
+        }else {
+          alarmEnabled = false;
+        }
         // Log the received values
         Serial.println("Updating Alarm Settings:");
         Serial.println("Alarm Time: " + alarmTime);
