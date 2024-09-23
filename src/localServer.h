@@ -29,8 +29,12 @@ extern bool ledState;
 extern unsigned long startAttemptTime;
 extern const unsigned long wifiTimeout;  // 10 seconds timeout
 
+extern bool atAlarmTrigger;
+extern bool atAlarmStop;
+
 void toggleLED();
 void startWebServer();
 void startAPMode(); 
 void fetchScenesAndSendToClient();
+extern void fadeInLight();
 #endif // LOCALSERVER

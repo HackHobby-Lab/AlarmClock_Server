@@ -8,6 +8,7 @@
 #include "GUI_Paint.h"
 #include <EEPROM.h>
 #include <stdlib.h>
+#include "localServer.h"
 
 extern int AlarmHH , AlarmMM, AlarmSS;
 

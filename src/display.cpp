@@ -232,6 +232,8 @@ lastEncoderValue = encoderValue;
     // Display current time in 12-hour format or alarm triggered message
     if (alarmTriggered == true) {
       Serial.println("Alarm triggered!");
+      if (atAlarmTrigger == true && atAlarmStop == false){fadeInLight(); };
+      
       alarmPlay();
       
       unsigned long currentMillis = millis();
@@ -498,6 +500,7 @@ void alarmPlay() {
 }
 
 void alarmStop(){
+  if (atAlarmTrigger == false && atAlarmStop == true){fadeInLight(); };
     alarmStopFlag = true;
     alarmSnoozeFlag = false;
     myDFPlayer.stop();

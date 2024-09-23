@@ -12,10 +12,16 @@
     }
 
     button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin: 10px;
-    }
+            padding: 10px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
 
     .content {
       margin-top: 20px;
@@ -458,6 +464,14 @@
       // Collect current settings
       const wakeUpScene = document.getElementById('wakeUpScene').value;
       const fadeInBefore = document.getElementById('fadeInBefore').value;
+      const triggerRadios = document.getElementsByName('trigger');
+      let trigger;
+      for (const radio of triggerRadios) {
+        if (radio.checked) {
+          trigger = radio.value;
+          break;
+        }
+      }
       const customButton = document.querySelector('input[name="customButton"]:checked').value;
       const customScene = document.getElementById('customScene').value;
       const fadeInTime = document.getElementById('fadeInTime').value;
@@ -466,6 +480,7 @@
       const settings = {
         wakeUpScene,
         fadeInBefore,
+        trigger,
         customButton,
         customScene,
         fadeInTime,

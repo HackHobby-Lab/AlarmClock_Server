@@ -20,11 +20,26 @@ IPAddress ap_IP(192, 168, 1, 148);    // Static IP address in AP mode
 const int ledPin = 2; // LED pin, change this according to your setup
 bool ledState = false;
 
+bool atAlarmTrigger = false;
+bool  atAlarmStop = false;
 String savedSettings;
 
 // Hue Emulator details
 String bridgeIP;
 String apiUsername;
+String groupID;
+
+String desiredSceneName;
+String SceneID;
+String fadeInBefore;
+
+DynamicJsonDocument responseDoc(512); 
+JsonArray scenesArray;
+JsonArray idsArray;
+
+String SceneIDnew;
+String sceneFound;
+
 const int lightID_1 = 1; // Light ID for wakeup
 const int lightID_2 = 2; // Light ID for sleep
 
@@ -222,7 +237,7 @@ void checkBridgeConnection() {
 
 // Function to handle searching for the Philips Hue Bridge using mDNS
 void handleSearchForBridge() {
-  int n = MDNS.queryService("_http", "tcp"); // Search for services named "hue" over TCP
+  int n = MDNS.queryService("_hue", "tcp"); // Search for services named "hue" over TCP
 
   if (n == 0) {
     Serial.println("No Philips Hue Bridge found");
@@ -232,6 +247,52 @@ void handleSearchForBridge() {
     bridgeIP = MDNS.IP(0).toString();
     Serial.println("Philips Hue Bridge found at IP: " + bridgeIP);
     server.send(200, "text/plain", bridgeIP);
+    if (WiFi.status() == WL_CONNECTED) {
+        HTTPClient http;
+        String url = "http://" + bridgeIP + "/api";
+        http.addHeader("Content-Type", "application/json");
+        unsigned long startTime = millis();
+        bool usernameFound = false;
+        while (millis() - startTime < 30000) // Retry for 30 seconds
+        {
+          http.begin(url);
+          int httpResponseCode = http.POST("{\"devicetype\":\"hue#AlarmClock\"}");
+          
+          if (httpResponseCode == 200) {
+            String response = http.getString();
+            Serial.println("Response from bridge: " + response);
+            Serial.println("Retrying");
+
+            StaticJsonDocument<200> doc;
+            // Deserialize the JSON document
+            DeserializationError error = deserializeJson(doc, response);
+            // Check if parsing succeeds
+            if (!error) {
+              // Extract the username
+              const char *username = doc[0]["success"]["username"];
+              if (username != nullptr && strlen(username) > 0) {
+                apiUsername = username;
+                fetchScenesAndSendToClient();
+                Serial.print("Username: ");
+                Serial.println(username);
+                server.send(200, "text/plain", "Bridge added successfully. Username: " + apiUsername);
+                Serial.println("Bridge added successfully. Username: " + String(apiUsername));
+                usernameFound = true;
+                // Save username persistently
+                saveUsername(apiUsername);
+                //fetchScenesAndSendToClient();
+                break; // Exit the loop since we found the username
+              }
+            }
+          }
+          // Delay before retrying to avoid hammering the API too fast
+          delay(100);
+        }
+        http.end();
+        if (!usernameFound) {
+          server.send(400, "text/plain", "Failed to get username after 30 seconds. Make sure to press the link button on the bridge.");
+        }
+      }
   }
 }
 
@@ -400,6 +461,7 @@ void handleSubmitScenes() {
   }
 }
 
+
 // Function to fetch scenes from the Hue Emulator and send them as a JSON response
 void fetchScenesAndSendToClient() {
   if (WiFi.status() == WL_CONNECTED) {
@@ -425,13 +487,55 @@ void fetchScenesAndSendToClient() {
       // Create a new JSON document to store the scene names
       DynamicJsonDocument responseDoc(1024);
       JsonObject root = doc.as<JsonObject>();
-      JsonArray scenesArray = responseDoc.createNestedArray("scenes");  // Create an array for scenes
       
-      // Access the root object (scenes) and store the scene names in the new array
+      // Create arrays to store scene names and their corresponding IDs
+       scenesArray = responseDoc.createNestedArray("scenes");  // Array for scene names
+       idsArray = responseDoc.createNestedArray("sceneIDs");    // Array for scene IDs
+
+      // Loop through the JSON object to save scene names and IDs
       for (JsonPair scenePair : root) {
-        JsonObject scene = scenePair.value().as<JsonObject>();  // Access scene object
-        String sceneName = scene["name"].as<String>();          // Get scene name
-        scenesArray.add(sceneName);                             // Add to scenes array
+          JsonObject scene = scenePair.value().as<JsonObject>();  // Access scene object
+
+          // Get scene name and ID
+          String sceneName = scene["name"].as<String>();          // Get scene name
+          String sceneID = scenePair.key().c_str();               // Get scene ID (key)
+
+          // Add to the respective arrays
+          scenesArray.add(sceneName);  
+          idsArray.add(sceneID);  
+
+          // Print for debugging
+          Serial.print("Scene Name: ");
+          Serial.print(sceneName);
+          Serial.print(", Scene ID: ");
+          Serial.println(sceneID);
+      }
+      Serial.println("Searching for scene ID...");
+
+      for (int i = 0; i < scenesArray.size(); i++) {
+          String sceneNames = scenesArray[i].as<String>();  // Get the scene name from the array
+
+          // Debugging: Print the current scene name being checked
+          Serial.print("Checking scene: ");
+          Serial.println(sceneNames);
+
+          // Check if the current scene name matches the desired scene name
+          if (sceneNames == desiredSceneName) {
+              SceneIDnew = idsArray[i].as<String>();  // Get the corresponding scene ID
+              sceneFound = true;
+
+              // Print the found scene ID
+              Serial.print("Found Scene ID: ");
+              Serial.println(SceneIDnew);
+              return;  // Exit once found
+          }
+      }
+
+      // If the scene was not found, print an error message
+      if (!sceneFound) {
+          Serial.print("Scene '");
+          Serial.print(desiredSceneName);
+          Serial.println("' not found.");
       }
 
       // Convert the new JSON document to a string and send it to the web interface
@@ -451,6 +555,29 @@ void fetchScenesAndSendToClient() {
   }
 }
 
+void fadeInLight() {
+  Serial.println("Fading Light");
+  HTTPClient http;
+  String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/scenes/" + String(SceneIDnew);
+  
+  // Increase brightness from 1 to 254 with a transition time of 100 deciseconds (10 seconds)
+  String payload = "{\"lightstates\": {\"1\": {\"on\": true, \"bri\": 254, \"transitiontime\":" +String(fadeInBefore)+ "}}}";
+  
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+
+  int httpResponseCode = http.PUT(payload);
+  if (httpResponseCode > 0) {
+    String response = http.getString();
+    Serial.println(response);
+  } else {
+    Serial.println("Error on sending PUT request");
+  }
+
+  http.end();
+}
+
+
 // Function to handle saving settings
 void handleSaveSettings() {
   if (server.hasArg("plain")) {
@@ -466,17 +593,34 @@ void handleSaveSettings() {
     }
     
     // Extract settings from the JSON object
-    String wakeUpScene = doc["wakeUpScene"].as<String>();
-    int fadeInBefore = doc["fadeInBefore"];
+    desiredSceneName = doc["wakeUpScene"].as<String>();
+    fadeInBefore = doc["fadeInBefore"].as<String>();
     String customButton = doc["customButton"].as<String>();
     String customScene = doc["customScene"].as<String>();
+    String trigger = doc["trigger"].as<String>();
     int fadeInTime = doc["fadeInTime"];
+
+    if (trigger == "alarmTime") {
+        Serial.println("Trigger is set to: When Alarm Start");
+        atAlarmTrigger = true;
+        atAlarmStop = false;
+        // Perform action for when the alarm starts
+      } else if (trigger == "alarmOff") {
+        atAlarmStop = true;
+        atAlarmTrigger = false;
+        Serial.println("Trigger is set to: When Alarm Stop");
+
+        // Perform action for when the alarm stops
+      }
 
     // Example: Save these settings in a global variable or EEPROM
     savedSettings = requestBody; // You can also use EEPROM.write() or another storage method
+   fetchScenesAndSendToClient();
 
     Serial.println("Settings saved:");
+    //fadeInLight() ;
     Serial.println(savedSettings);
+    Serial.println(trigger);
     
     // Send success response
     server.send(200, "text/plain", "Settings saved successfully");
