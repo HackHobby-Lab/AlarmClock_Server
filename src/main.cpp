@@ -3,12 +3,10 @@
 #include "localServer.h"
 #include "Display.h"
 
-
-
-
 void setup_wifi() {
   delay(10);
   setupPeripheral(); // only for testing
+  // EEPROM.begin(512); // only for testing
   Serial.println();
   preferences.begin("wifi", false); // REVISIT: Already initialized
 

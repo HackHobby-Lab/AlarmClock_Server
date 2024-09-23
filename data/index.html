@@ -39,6 +39,50 @@
     .alarm-list li {
       margin: 10px 0;
     }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px; 
+      height: 20px; 
+    }
+
+
+    .switch input {
+      display: none;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 20px;  /* Adjusted for new size */
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;  
+      width: 16px;   
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #4CAF50;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px); 
+    }
   </style>
   <script>
     let alarms = [];
@@ -71,7 +115,7 @@
       document.getElementById('mainUI').classList.add('hidden');
     }
 
-    function showWiFiSettings() {
+    function showSystemSettings() {
       document.getElementById('WelcomeScreen').classList.add('hidden');
       document.getElementById('ScheduleScreen').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.remove('hidden');
@@ -595,12 +639,15 @@
       alarms.push(alarm);
       updateAlarmList();
 
+      // Get the status of the toggle button
+      let alarmloopEnabled = document.getElementById('alarmToggle').checked;
+
       fetch('/addAlarm', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `alarmTime=${encodeURIComponent(alarmTime)}`
+        body: `alarmTime=${encodeURIComponent(alarmTime)}&alarmloopEnabled=${encodeURIComponent(alarmloopEnabled)}`
       })
       .then(response => response.text())
       .then(data => alert(data))
@@ -608,22 +655,22 @@
     }
 
     function deleteAlarm(alarmId) {
-  alarms = alarms.filter(alarm => alarm.id !== alarmId);
-  alarm = null; // Reset the single alarm
-  
-  updateAlarmList();
+      alarms = alarms.filter(alarm => alarm.id !== alarmId);
+      alarm = null; // Reset the single alarm
+      
+      updateAlarmList();
 
-  fetch('/deleteAlarm', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: `alarmId=${encodeURIComponent(alarmId)}`
-  })
-  .then(response => response.text())
-  .then(data => alert(data))
-  .catch(error => console.error('Error:', error));
-}
+      fetch('/deleteAlarm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `alarmId=${encodeURIComponent(alarmId)}`
+      })
+      .then(response => response.text())
+      .then(data => alert(data))
+      .catch(error => console.error('Error:', error));
+    }
 
     function updateAlarmList() {
       let alarmList = document.getElementById('alarmList');
@@ -650,9 +697,36 @@
 
           alarm = { HH: HH, MM: MM};
           updateAlarmList();
+          // Set the alarm time in the input field
+          document.getElementById('alarmTimeInput').value = `${HH}:${MM}`;
         }
       })
       .catch(error => console.error('Error fetching alarm:', error));
+    }
+
+    function updateAlarm() {
+      const alarmTime = document.getElementById('alarmTimeInput').value;
+      const alarmEnabled = document.getElementById('alarmToggle').checked;
+
+      const data = {
+        time: alarmTime,
+        enabled: alarmEnabled
+      };
+
+      fetch('/updateAlarm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.text())
+      .then(result => {
+        console.log('Alarm settings updated:', result);
+      })
+      .catch(error => {
+        console.error('Error updating alarm settings:', error);
+      });
     }
 
     function showCurrentTime() {
@@ -683,7 +757,7 @@
   <div>
     <button onclick="showWelcomeScreen()">Welcome</button>
     <button onclick="showScheduleScreen()">Schedule</button>
-    <button onclick="showWiFiSettings()">System Settings</button>
+    <button onclick="showSystemSettings()">System Settings</button>
     <button onclick="showLEDControl()">LED Control</button>
     <button onclick="showWakeupSound()">Wake-up Sound</button>
     <button onclick="showSleepSound()">Sleep Sound</button>
@@ -703,6 +777,23 @@
   <!-- Date and Time Settings Section -->
   <div id="dateTimeSettings" class="content hidden">
     <div id="currentTime"></div>
+    <div>
+      <!-- Label for alarm time -->
+      <label for="alarmTimeInput">Alarm time</label>
+    
+      <!-- Input for alarm time (editable) -->
+      <input type="time" id="alarmTimeInput">
+    
+      <!-- Toggle for alarm (on/off switch) -->
+      <label class="switch">
+        <input type="checkbox" id="alarmToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    
+    <!-- Button to update alarm settings -->
+    <button onclick="updateAlarm()">Update Alarm</button>
+    
     <h2>Date & Time Settings</h2>
     <form onsubmit="setDateTime(event); return false;">
       <label for="date">Date:</label><br>

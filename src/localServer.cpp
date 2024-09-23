@@ -66,11 +66,15 @@ void setBrightness() {
 }
 
 void setAlarm() {
-  if (server.hasArg("alarmTime")) {
+  if (server.hasArg("alarmTime") && server.hasArg("alarmloopEnabled")) {
     String alarmTime = server.arg("alarmTime");
+    String alarmloopEnabledStr = server.arg("alarmloopEnabled");
+    // Convert the toggle status to a boolean
+    bool alarmloopEnabled = alarmloopEnabledStr == "true";
 
     // Log the received alarm time
     Serial.println("Alarm Time: " + alarmTime);
+    Serial.println("Alarm Loop Enabled: " + String(alarmloopEnabled));
 
     // Parse the alarm time
     int hour = alarmTime.substring(0, 2).toInt();
@@ -97,21 +101,69 @@ void setAlarm() {
 
     // Call the function to set the alarm in another file
     setAlarmTime(hour, minute, second, isPM);
+    // setAlarmTime(hour, minute, second, isPM, alarmloopEnabled); // Use this to integrate toggle button
 
     // Send a success response to the client
-    server.send(200, "text/plain", "Alarm Time set to: " + alarmTime);
+    server.send(200, "text/plain", "Alarm Time set to: " + alarmTime + " | Repeat: " + (alarmloopEnabled ? "Daily" : "Once"));
   }  else {
     server.send(400, "text/plain", "Bad Request: Alarm Time not provided");
   }
 }
 
-void deleteAlarm(){
+void deleteAlarm() {
   Serial.println("Deleting");
     int hour = 0;
     int minute = 0;
     int second = 0;
     bool isPM = false;
   setAlarmTime(hour, minute, second, isPM);
+}
+
+void updateAlarm() {
+    // Check if the necessary arguments are present in the POST request
+    if (server.hasArg("plain")) {
+        // Parse the JSON data received from the client
+        String body = server.arg("plain");
+        
+        // Extract "time" and "enabled" from the JSON body
+        DynamicJsonDocument doc(1024);
+        DeserializationError error = deserializeJson(doc, body);
+
+        if (error) {
+            Serial.println("Error parsing JSON");
+            server.send(400, "text/plain", "Invalid JSON data");
+            return;
+        }
+
+        String alarmTime = doc["time"];
+        bool alarmEnabled = doc["enabled"];
+
+        // Log the received values
+        Serial.println("Updating Alarm Settings:");
+        Serial.println("Alarm Time: " + alarmTime);
+        Serial.println("Alarm Loop Enabled: " + String(alarmEnabled));
+
+        // Parse the alarm time
+        int hour = alarmTime.substring(0, 2).toInt();
+        int minute = alarmTime.substring(3, 5).toInt();
+        int second = 10; 
+
+        // Determine AM/PM (if using 12-hour format)
+        bool isPM = false;
+        if (hour >= 12) {
+            isPM = true;
+        }
+
+        // Update the alarm time and enable status
+        setAlarmTime(hour, minute, second, isPM);
+        // setAlarmTime(hour, minute, second, isPM, alarmEnabled);  // Use this to integrate toggle button
+
+        // Respond to the client indicating the update was successful
+        server.send(200, "text/plain", "Alarm updated to: " + alarmTime + " | Enabled: " + String(alarmEnabled));
+    } else {
+        // If no JSON data was provided in the request
+        server.send(400, "text/plain", "No alarm data provided");
+    }
 }
 
 void setAmPm() {
@@ -758,7 +810,8 @@ void startWebServer() {
   server.on("/setBrightness", setBrightness);
   server.on("/setDateTime", setDateTime);
   server.on("/addAlarm", setAlarm);
-   server.on("/deleteAlarm", deleteAlarm);
+  server.on("/deleteAlarm", deleteAlarm);
+  server.on("/updateAlarm", updateAlarm);
   server.on("/amPmValue", setAmPm);
   server.on("/changeVolume", changeVolume);
   server.on("/setWakeupSound", setWakeupSound);
