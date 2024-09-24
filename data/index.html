@@ -12,16 +12,17 @@
     }
 
     button {
-            padding: 10px;
-            background-color: #5cb85c;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #4cae4c;
-        }
+      padding: 10px;
+      background-color: #5cb85c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #4cae4c;
+    }
 
     .content {
       margin-top: 20px;
@@ -46,7 +47,6 @@
       width: 40px; 
       height: 20px; 
     }
-
 
     .switch input {
       display: none;
@@ -311,7 +311,17 @@
         .catch(error => console.error('Error:', error));
     }
 
-    // Function to change the wake-up and sleep sound volume
+    function fetchCurrentDateTime() {
+      fetch('/getDateTime')
+        .then(response => response.json())
+        .then(data => {
+          // Assuming the returned data has "date" and "time" properties
+          document.getElementById('date').value = data.date; // Set the date field
+          // document.getElementById('time').value = data.time; // Set the time field
+        })
+        .catch(error => console.error('Error fetching current date and time:', error));
+    }
+
     function changeVolume(value) {
       fetch('/changeVolume', {
         method: 'POST',
@@ -332,7 +342,6 @@
           .then(data => console.log(data));
     }
 
-    // Function to preview the selected wake-up sound
     function previewWakeupSound() {
       let selectedSound = document.getElementById('wakeupSoundSelect').value;
 
@@ -355,7 +364,6 @@
           .then(data => console.log(data));
     }
 
-    // Function to preview the selected sleep sound
     function previewSleepSound() {
       let selectedSound = document.getElementById('sleepSoundSelect').value;
 
@@ -371,7 +379,6 @@
         .catch(error => console.error('Error previewing sound:', error));
     }
 
-    // Function to handle "Search for bridge" button click
     function searchForBridge() {
       document.getElementById('manualIpInput').classList.add('hidden');
       document.getElementById('hueFeedback').classList.add('hidden');
@@ -399,13 +406,11 @@
       });
     }
 
-    // Function to handle "Add manually" button click
     function addManually() {
       document.getElementById('manualIpInput').classList.remove('hidden');
       document.getElementById('hueFeedback').classList.add('hidden');
     }
 
-    // Function to submit IP address for manual addition
     function submitIp() {
       const ip = document.getElementById('bridgeIp').value;
       const feedbackElement = document.getElementById('hueFeedback');
@@ -474,7 +479,6 @@
       });
     }
     
-    // Function to handle the successful bridge connection
     function bridgeConnected() {
       // Hide the connection settings and show the main UI
       document.getElementById('philipsHueSettings').classList.add('hidden');
@@ -503,7 +507,6 @@
       });
     }
 
-    // Function to save settings
     function saveSettings() {
       // Collect current settings
       const wakeUpScene = document.getElementById('wakeUpScene').value;
@@ -549,7 +552,6 @@
       });
     }
 
-    // Function to reset settings
     function resetSettings() {
       fetch('/resetSettings', {
         method: 'POST'
@@ -585,7 +587,6 @@
         });
     }
 
-    // Function to fetch scenes from the ESP32 and update the dropdown menus
     function fetchScenes() {
       fetch('/fetchScenes', { method: 'POST',
             headers: {
@@ -697,8 +698,11 @@
 
           alarm = { HH: HH, MM: MM};
           updateAlarmList();
-          // Set the alarm time in the input field
-          document.getElementById('alarmTimeInput').value = `${HH}:${MM}`;
+          if (document.getElementById('alarmTimeInput')) {
+            document.getElementById('alarmTimeInput').value = `${HH}:${MM}`; // Set the alarm time in the input field
+          } else {
+            console.error('Alarm time input field not found');
+          }
         }
       })
       .catch(error => console.error('Error fetching alarm:', error));
@@ -745,7 +749,7 @@
       fetchSavedAlarm();
       fetchWiFiStatus();
       scanNetworks();
-      
+      fetchCurrentDateTime();
     };
   </script>
 </head>
