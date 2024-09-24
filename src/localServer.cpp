@@ -213,6 +213,49 @@ void setDateTime() {
   }
 }
 
+String getCurrentDate() {
+  DateTime now = rtc.now(); // Assuming you have a function to read the current time from DS3231
+
+  int year = now.year();
+  int month = now.month();
+  int day = now.day();
+
+  // Format the date into YYYY-MM-DD
+  char dateString[11]; // Buffer to hold the formatted date
+  snprintf(dateString, sizeof(dateString), "%04d-%02d-%02d", year, month, day);
+
+  return String(dateString);
+}
+
+String getCurrentTime() {
+  DateTime now = rtc.now(); // Assuming you have a function to read the current time from DS3231
+
+  int hour = now.hour();
+  int minute = now.minute();
+  int second = now.second();
+
+  // Format the time into HH:MM:SS
+  char timeString[9]; // Buffer to hold the formatted time
+  snprintf(timeString, sizeof(timeString), "%02d:%02d:%02d", hour, minute, second);
+
+  return String(timeString);
+}
+
+void getDateTime() {
+  // Fetch the current date and time from the ESP (assuming you have a function like 'getCurrentDateTime')
+  String currentDate = getCurrentDate(); // Returns date in YYYY-MM-DD format
+  // String currentTime = getCurrentTime(); // Returns time in HH:MM:SS format
+  
+  // Create a JSON response
+  // String jsonResponse = "{\"date\":\"" + currentDate + "\", \"time\":\"" + currentTime + "\"}";
+  
+  // Create a JSON response with only the date
+  String jsonResponse = "{\"date\":\"" + currentDate + "\"}";
+
+  // Send the response as JSON
+  server.send(200, "application/json", jsonResponse);
+}
+
 void changeVolume() {
   String level = server.arg("volume");
   int volume = level.toInt();
@@ -268,9 +311,12 @@ void previewSleepSound() {
   }
 }
 
-void saveUsername(String username) {
+void saveAPIandUsername(String bridgeIP, String username) {
   // Open Preferences with the name "hueSettings", for read and write
   preferences.begin("hueSettings", false);
+
+  // Save the ip in preferences
+  preferences.putString("bridgeip", bridgeIP);
   
   // Save the username in preferences
   preferences.putString("username", username);
@@ -289,8 +335,50 @@ String loadUsername() {
   return savedUsername;
 }
 
+String loadBridgeIP() {
+  preferences.begin("hueSettings", true); // Open for read only
+  String savedBridgeIP = preferences.getString("bridgeip", "");
+  preferences.end();
+  return savedBridgeIP;
+}
+
+bool BridgeConnection(String bridgeIP, String apiUsername) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    String url = "http://" + bridgeIP + "/api/" + apiUsername + "/config";
+    http.begin(url);
+    
+    int httpResponseCode = http.GET();
+    
+    if (httpResponseCode == 200) {
+      String response = http.getString();
+      Serial.println("Response from bridge: " + response);
+
+      // Parse the JSON response
+      StaticJsonDocument<200> doc;
+      DeserializationError error = deserializeJson(doc, response);
+      
+      if (!error) {
+        // If the response contains valid configuration data, the bridge is connected
+        const char* name = doc["name"];
+        if (name != nullptr && strlen(name) > 0) {
+          Serial.println("Bridge is connected. Name: " + String(name));
+          return true;
+        }
+      }
+    } else {
+      Serial.println("Failed to connect to the bridge. Response code: " + String(httpResponseCode));
+    }
+    http.end();
+  } else {
+    Serial.println("WiFi not connected");
+  }
+  return false;
+}
+
 void checkBridgeConnection() {
   String storedUsername = loadUsername();
+  String storedBridgeIP = loadBridgeIP();
 
   if (storedUsername.length() > 0) {
     server.send(200, "text/plain", "ConnectionFound");
@@ -351,7 +439,7 @@ void handleSearchForBridge() {
                 Serial.println("Bridge added successfully. Username: " + String(apiUsername));
                 usernameFound = true;
                 // Save username persistently
-                saveUsername(apiUsername);
+                saveAPIandUsername(bridgeIP, apiUsername);
                 //fetchScenesAndSendToClient();
                 break; // Exit the loop since we found the username
               }
@@ -411,7 +499,7 @@ void handleAddManually() {
                 Serial.println("Bridge added successfully. Username: " + String(apiUsername));
                 usernameFound = true;
                 // Save username persistently
-                saveUsername(apiUsername);
+                saveAPIandUsername(bridgeIP, apiUsername);
                 //fetchScenesAndSendToClient();
                 break; // Exit the loop since we found the username
               }
@@ -442,6 +530,7 @@ void handleDisconnect() {
   
   // Remove the saved username by clearing the key
   preferences.remove("username");
+  preferences.remove("bridgeip");
   
   // Close Preferences
   preferences.end();
@@ -845,6 +934,7 @@ void startWebServer() {
   server.on("/toggleLED", toggleLED);
   server.on("/setBrightness", setBrightness);
   server.on("/setDateTime", setDateTime);
+  server.on("/getDateTime", getDateTime);
   server.on("/addAlarm", setAlarm);
   server.on("/deleteAlarm", deleteAlarm);
   server.on("/updateAlarm", updateAlarm);

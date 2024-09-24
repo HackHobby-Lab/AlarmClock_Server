@@ -14,6 +14,7 @@ extern int AlarmHH , AlarmMM, AlarmSS;
 
 extern bool changeSceneBtn;
 extern bool changeSceneBtnENC;
+extern RTC_DS3231 rtc;
 
 // Function prototypes
 void setupPeripheral();
