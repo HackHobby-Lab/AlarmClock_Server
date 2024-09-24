@@ -12,6 +12,9 @@
 
 extern int AlarmHH , AlarmMM, AlarmSS;
 
+extern bool changeSceneBtn;
+extern bool changeSceneBtnENC;
+
 // Function prototypes
 void setupPeripheral();
 void updateEncoder();

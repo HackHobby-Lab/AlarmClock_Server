@@ -32,6 +32,9 @@ extern const unsigned long wifiTimeout;  // 10 seconds timeout
 extern bool atAlarmTrigger;
 extern bool atAlarmStop;
 extern  bool alarmEnabled;
+extern bool enabledAlarm;
+extern bool customButtonOne;
+extern bool customButtonTwo;
 
 void toggleLED();
 void startWebServer();

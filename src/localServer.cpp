@@ -23,6 +23,9 @@ bool ledState = false;
 bool atAlarmTrigger = false;
 bool  atAlarmStop = false;
  bool alarmEnabled = false;
+bool enabledAlarm = false;
+bool customButtonOne = false;
+bool customButtonTwo = false;
 String savedSettings;
 
 // Hue Emulator details
@@ -140,8 +143,12 @@ void updateAlarm() {
         bool alarmEnabled = doc["enabled"];
         if (alarmEnabled == 1){
            alarmEnabled = true;
+           enabledAlarm = true;
+           Serial.println("Alarm is Enabled");
         }else {
           alarmEnabled = false;
+          enabledAlarm = false;
+          Serial.println("Alarm is disabled");
         }
         // Log the received values
         Serial.println("Updating Alarm Settings:");
@@ -267,6 +274,7 @@ void saveUsername(String username) {
   
   // Save the username in preferences
   preferences.putString("username", username);
+  preferences.putString("ipaddress", bridgeIP);
   
   // Close Preferences
   preferences.end();
@@ -275,6 +283,8 @@ void saveUsername(String username) {
 String loadUsername() {
   preferences.begin("hueSettings", true); // Open for read only
   String savedUsername = preferences.getString("username", "");
+  bridgeIP = preferences.getString("ipaddress", "");
+  apiUsername = savedUsername;
   preferences.end();
   return savedUsername;
 }
@@ -283,9 +293,14 @@ void checkBridgeConnection() {
   String storedUsername = loadUsername();
 
   if (storedUsername.length() > 0) {
+    server.send(200, "text/plain", "ConnectionFound");
     // Bridge is already connected, skip connection flow
     Serial.println("Bridge already connected. Username: " + storedUsername);
+    // apiUsername = storedUsername;
+    
+    server.send(200, "text/plain", "ConnectionFound");
     server.send(200, "text/plain", "Bridge already connected");
+    fetchScenesAndSendToClient();
   } else {
     // No username found, proceed with connection flow
     server.send(200, "text/plain", "No bridge connected");
@@ -600,6 +615,8 @@ void fetchScenesAndSendToClient() {
       serializeJson(responseDoc, jsonResponse);
       server.send(200, "application/json", jsonResponse);  // Send response
     } else {
+    
+      server.send(500, "text/plain", "SceneNotFound");
       Serial.println("Failed to connect to Hue Bridge. HTTP error code: " + String(httpCode));
       server.send(500, "text/plain", "Failed to connect to the Hue Bridge.");
     }
@@ -669,6 +686,20 @@ void handleSaveSettings() {
 
         // Perform action for when the alarm stops
       }
+
+    if (customButton == "button1"){
+      Serial.println("button1 Pressed");
+      customButtonOne = true;
+      customButtonTwo = false;
+      desiredSceneName = customScene;
+
+    }
+    else if (customButton == "button2"){
+      Serial.println("button2 Pressed");
+      customButtonOne = false;
+      customButtonTwo = true;
+      desiredSceneName = customScene; 
+    }
 
     // Example: Save these settings in a global variable or EEPROM
     savedSettings = requestBody; // You can also use EEPROM.write() or another storage method
