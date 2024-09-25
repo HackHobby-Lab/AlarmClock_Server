@@ -32,7 +32,7 @@ String savedSettings;
 String bridgeIP;
 String apiUsername;
 String groupID;
-
+String groupIdNew;
 String desiredSceneName;
 String SceneID;
 String fadeInBefore;
@@ -40,6 +40,7 @@ String fadeInBefore;
 DynamicJsonDocument responseDoc(512); 
 JsonArray scenesArray;
 JsonArray idsArray;
+JsonArray groupArray;
 
 String SceneIDnew;
 String sceneFound;
@@ -130,8 +131,8 @@ void updateAlarm() {
         String body = server.arg("plain");
         
         // Extract "time" and "enabled" from the JSON body
-        DynamicJsonDocument doc(1024);
-        DeserializationError error = deserializeJson(doc, body);
+        DynamicJsonDocument docAlarm(1024);
+        DeserializationError error = deserializeJson(docAlarm, body);
 
         if (error) {
             Serial.println("Error parsing JSON");
@@ -139,8 +140,8 @@ void updateAlarm() {
             return;
         }
 
-        String alarmTime = doc["time"];
-        bool alarmEnabled = doc["enabled"];
+        String alarmTime = docAlarm["time"];
+        bool alarmEnabled = docAlarm["enabled"];
         if (alarmEnabled == 1){
            alarmEnabled = true;
            enabledAlarm = true;
@@ -388,10 +389,10 @@ void checkBridgeConnection() {
     
     server.send(200, "text/plain", "ConnectionFound");
     server.send(200, "text/plain", "Bridge already connected");
-    fetchScenesAndSendToClient();
+    // fetchScenesAndSendToClient();
   } else {
     // No username found, proceed with connection flow
-    server.send(200, "text/plain", "No bridge connected");
+    server.send(502, "text/plain", "No bridge connected Boy");
   }
 }
 
@@ -432,7 +433,7 @@ void handleSearchForBridge() {
               const char *username = doc[0]["success"]["username"];
               if (username != nullptr && strlen(username) > 0) {
                 apiUsername = username;
-                fetchScenesAndSendToClient();
+                // fetchScenesAndSendToClient();
                 Serial.print("Username: ");
                 Serial.println(username);
                 server.send(200, "text/plain", "Bridge added successfully. Username: " + apiUsername);
@@ -440,7 +441,7 @@ void handleSearchForBridge() {
                 usernameFound = true;
                 // Save username persistently
                 saveAPIandUsername(bridgeIP, apiUsername);
-                //fetchScenesAndSendToClient();
+                fetchScenesAndSendToClient();
                 break; // Exit the loop since we found the username
               }
             }
@@ -492,7 +493,7 @@ void handleAddManually() {
               const char *username = doc[0]["success"]["username"];
               if (username != nullptr && strlen(username) > 0) {
                 apiUsername = username;
-                fetchScenesAndSendToClient();
+                // fetchScenesAndSendToClient();
                 Serial.print("Username: ");
                 Serial.println(username);
                 server.send(200, "text/plain", "Bridge added successfully. Username: " + apiUsername);
@@ -500,7 +501,7 @@ void handleAddManually() {
                 usernameFound = true;
                 // Save username persistently
                 saveAPIandUsername(bridgeIP, apiUsername);
-                //fetchScenesAndSendToClient();
+                fetchScenesAndSendToClient();
                 break; // Exit the loop since we found the username
               }
             }
@@ -632,48 +633,46 @@ void fetchScenesAndSendToClient() {
     http.begin(url);  // Initialize HTTP connection
     int httpCode = http.GET(); // Send GET request
 
+    // Create a new JSON document to store the scene names
+    DynamicJsonDocument responseDoc(4096);
+    Serial.print("Memory used: ");
+Serial.println(responseDoc.memoryUsage());
+     scenesArray = responseDoc.createNestedArray("scenes");  // Array for scene names
+     idsArray = responseDoc.createNestedArray("sceneIDs");    // Array for scene IDs
+     groupArray = responseDoc.createNestedArray("group");
+
     if (httpCode > 0) {  // If successful response received
       String response = http.getString();  // Get the response payload
 
       // Parse JSON data
-      DynamicJsonDocument doc(2048);  // Increase size to accommodate more scenes
-      DeserializationError error = deserializeJson(doc, response);
+      DynamicJsonDocument docScene(4096);  // Increase size to accommodate more scenes
+      Serial.print("Memory used: ");
+Serial.println(docScene.memoryUsage());
+      DeserializationError error = deserializeJson(docScene, response);
       
       if (error) {
         Serial.println("Failed to parse JSON: " + String(error.c_str()));
-        server.send(500, "text/plain", "Failed to parse scenes from the Hue Bridge.");
-        return;
+        server.send(502, "text/plain", "Failed to parse scenes from the Hue Bridge.");
       }
 
-      // Create a new JSON document to store the scene names
-      DynamicJsonDocument responseDoc(1024);
-      JsonObject root = doc.as<JsonObject>();
-      
-      // Create arrays to store scene names and their corresponding IDs
-       scenesArray = responseDoc.createNestedArray("scenes");  // Array for scene names
-       idsArray = responseDoc.createNestedArray("sceneIDs");    // Array for scene IDs
-
       // Loop through the JSON object to save scene names and IDs
+      JsonObject root = docScene.as<JsonObject>();
       for (JsonPair scenePair : root) {
           JsonObject scene = scenePair.value().as<JsonObject>();  // Access scene object
-
           // Get scene name and ID
           String sceneName = scene["name"].as<String>();          // Get scene name
-          String sceneID = scenePair.key().c_str();               // Get scene ID (key)
+          String SceneID = scenePair.key().c_str();               // Get scene ID (key)
+          String groupID = scene["group"].as<String>();
 
           // Add to the respective arrays
           scenesArray.add(sceneName);  
-          idsArray.add(sceneID);  
-
-          // Print for debugging
-          Serial.print("Scene Name: ");
-          Serial.print(sceneName);
-          Serial.print(", Scene ID: ");
-          Serial.println(sceneID);
+          idsArray.add(SceneID);  
+          groupArray.add(groupID);
+          Serial.print("Scene array :         ");
+          Serial.println(scene);
       }
-      Serial.println("Searching for scene ID...");
 
-      for (int i = 0; i < scenesArray.size(); i++) {
+        for (int i = 0; i < scenesArray.size(); i++) {
           String sceneNames = scenesArray[i].as<String>();  // Get the scene name from the array
 
           // Debugging: Print the current scene name being checked
@@ -683,56 +682,54 @@ void fetchScenesAndSendToClient() {
           // Check if the current scene name matches the desired scene name
           if (sceneNames == desiredSceneName) {
               SceneIDnew = idsArray[i].as<String>();  // Get the corresponding scene ID
+              groupIdNew = groupArray[i].as<String>();
               sceneFound = true;
 
               // Print the found scene ID
               Serial.print("Found Scene ID: ");
-              Serial.println(SceneIDnew);
-              return;  // Exit once found
+              Serial.print(SceneIDnew);
+              Serial.print(", Found the Group Id: ");
+              Serial.println(groupIdNew);
+             
+              //return;  // Exit once found
           }
       }
-
-      // If the scene was not found, print an error message
-      if (!sceneFound) {
-          Serial.print("Scene '");
-          Serial.print(desiredSceneName);
-          Serial.println("' not found.");
-      }
-
-      // Convert the new JSON document to a string and send it to the web interface
-      String jsonResponse;
-      serializeJson(responseDoc, jsonResponse);
-      server.send(200, "application/json", jsonResponse);  // Send response
     } else {
-    
-      server.send(500, "text/plain", "SceneNotFound");
       Serial.println("Failed to connect to Hue Bridge. HTTP error code: " + String(httpCode));
-      server.send(500, "text/plain", "Failed to connect to the Hue Bridge.");
+      // Optionally, you can still send an empty array even if the connection fails
+      server.send(502, "text/plain", "Failed to connect to the Hue Bridge.");
     }
 
-    http.end();  // Close the HTTP connection
+    // Convert the new JSON document to a string and send it to the web interface
+    // responseDoc["sceneIDs"] = idsArray; // Add IDs to the response
+    // responseDoc["group"] = groupArray;   // Add groups to the response
+    String jsonResponse;
+    serializeJson(responseDoc, jsonResponse); // Serialize the full response
+    server.send(200, "text/plain", jsonResponse);  // Send response
 
+    http.end();  // Close the HTTP connection
   } else {
     Serial.println("WiFi not connected.");
     server.send(500, "text/plain", "WiFi not connected.");
   }
 }
 
+
 void fadeInLight() {
   Serial.println("Fading Light");
   HTTPClient http;
-  String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/scenes/" + String(SceneIDnew);
-  
-  // Increase brightness from 1 to 254 with a transition time of 100 deciseconds (10 seconds)
-  String payload = "{\"lightstates\": {\"1\": {\"on\": true, \"bri\": 254, \"transitiontime\":" +String(fadeInBefore)+ "}}}";
-  
+  String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/groups/" + String(groupIdNew) +"/action";
+   Serial.println(SceneID);
+  String payload = "{\"scene\": \""  + String(SceneIDnew) + "\", \"transitiontime\":" + String(fadeInBefore) + "}";
+  Serial.println("Sending Payload: " + payload);
+
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
 
   int httpResponseCode = http.PUT(payload);
   if (httpResponseCode > 0) {
-    String response = http.getString();
-    Serial.println(response);
+    String responseStatus = http.getString();
+    Serial.println(responseStatus);
   } else {
     Serial.println("Error on sending PUT request");
   }

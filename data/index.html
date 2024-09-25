@@ -118,6 +118,7 @@
     }
 
     function showSystemSettings() {
+      fetchCurrentDateTime();
       document.getElementById('WelcomeScreen').classList.add('hidden');
       document.getElementById('ScheduleScreen').classList.add('hidden');
       document.getElementById('dateTimeSettings').classList.remove('hidden');
@@ -319,7 +320,7 @@
         .then(data => {
           // Assuming the returned data has "date" and "time" properties
           document.getElementById('date').value = data.date; // Set the date field
-          // document.getElementById('time').value = data.time; // Set the time field
+          document.getElementById('time').value = data.time; // Set the time field
         })
         .catch(error => console.error('Error fetching current date and time:', error));
     }
@@ -430,11 +431,11 @@
       })
       .then(response => {
         console.log("Response received:", response);
-        fetchScenes();
+       // fetchScenes();
         
         // Check if the response status is 200 (OK) or handle errors
         if (response.ok) {
-          fetchScenes();
+          //fetchScenes();
           return response.text(); // Proceed to read the response body as text
           
         } else {
@@ -450,7 +451,7 @@
         
         // Hide manual IP input section
         document.getElementById('manualIpInput').classList.add('hidden');
-        setInterval(fetchScenes, 30000);  // 30000ms = 30 seconds
+        
         // Call the function to show Philips Hue Light setup
         bridgeConnected();
       })
@@ -461,6 +462,7 @@
         console.error('Error:', error);
       });
     }
+    setInterval(fetchScenes, 30000);  // 30000ms = 30 seconds
 
     function checkBridgeConnection() {
       fetch('/checkBridgeConnection')
@@ -470,7 +472,7 @@
           // Bridge is connected, show the main UI
           document.getElementById('philipsHueSettings').classList.add('hidden');
           document.getElementById('mainUI').classList.remove('hidden');
-          fetchScenes();
+          // fetchScenes();
           console.log("Bridge already connected. Skipping connection flow.");
         } 
         else {
@@ -551,7 +553,7 @@
       .then(response => response.text())
       .then(data => {
         console.log(data);
-        alert(data);
+        alert('Setting Saved successfully!');
       })
       .catch(error => {
         console.error('Error:', error);
@@ -594,46 +596,57 @@
         });
     }
 
-    function fetchScenes() {
-      fetch('/fetchScenes', { method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            }})
-        .then(response => response.json())
-        .then(data => {
-          const scenes = data.scenes;  // Array of scenes
-          const ScenesSelect = document.getElementById('wakeUpScene');
-          const customSceneSelect = document.getElementById('customScene');
+    async function fetchScenes() {
+      console.log("In Scene function on JS side");
+  try {
+    // Make the fetch request
+    const response = await fetch('/fetchScenes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain',
+      },
+    });
 
-          // Check if there are new scenes compared to the previous fetch
-          if (JSON.stringify(scenes) !== JSON.stringify(previousScenes)) {
-            // Clear the current options if scenes are updated
-            ScenesSelect.innerHTML = '';
-            customSceneSelect.innerHTML = '';
+    // Log the raw response for debugging
+    console.log('Raw Response:', response);
 
-            // Populate the dropdowns with the fetched scenes
-            scenes.forEach(scene => {
-              const option = document.createElement('option');
-              option.value = scene;
-              option.textContent = scene;
+    // Parse the JSON response, even if the response is not OK
+    const data = await response.json().catch(() => ({})); // Fallback to empty object on parse error
 
-              // Append to both wake-up and custom scene dropdowns
-              ScenesSelect.appendChild(option.cloneNode(true));
-              customSceneSelect.appendChild(option);
-            });
+    // Extract the scenes array from the response
+    const scenes = data.scenes || [];  // Use empty array if scenes not found
+    console.log("Scenes Fetched:", scenes);
 
-            // Update the previous scenes list
-            previousScenes = scenes;
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching scenes:', error);
-          
-          
-          console.log("No bridge connected. Please connect.");
-          // alert('Failed to fetch scenes from the Hue Bridge.');
-        });
-    }
+    // Get the dropdown elements
+    const ScenesSelect = document.getElementById('wakeUpScene');
+    const customSceneSelect = document.getElementById('customScene');
+
+    // Clear the current options if scenes are updated
+    ScenesSelect.innerHTML = '';
+    customSceneSelect.innerHTML = '';
+
+    // Populate the dropdowns with the fetched scenes
+    scenes.forEach(scene => {
+      const option = document.createElement('option');
+      option.value = scene;
+      option.textContent = scene;
+
+      // Append to both wake-up and custom scene dropdowns
+      ScenesSelect.appendChild(option.cloneNode(true));
+      customSceneSelect.appendChild(option);
+    });
+
+    // Update the previous scenes list
+    previousScenes = scenes;
+    console.log("Scenes updated in dropdowns.");
+    
+  } catch (error) {
+    console.error('Error fetching scenes:', error);
+    alert('Failed to fetch scenes from the Hue Bridge. Please check your connection.');
+  }
+}
+
+
 
     function addAlarm(event) {
       event.preventDefault();
@@ -659,10 +672,14 @@
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: `alarmTime=${encodeURIComponent(alarmTime)}&alarmloopEnabled=${encodeURIComponent(alarmloopEnabled)}`
+        
       })
+      .then(body => alert(body))
+      
       .then(response => response.text())
       .then(data => alert(data))
       .catch(error => console.error('Error:', error));
+      
     }
 
     function deleteAlarm(alarmId) {
@@ -730,13 +747,17 @@
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data)
+        
       })
       .then(response => response.text())
       .then(result => {
+        alert(result);
         console.log('Alarm settings updated:', result);
+        
       })
       .catch(error => {
         console.error('Error updating alarm settings:', error);
+        alert('Alarm setting failed');
       });
     }
 
@@ -757,6 +778,7 @@
       fetchWiFiStatus();
       scanNetworks();
       fetchCurrentDateTime();
+      fetchSavedAlarm();
       //checkBridgeConnection();
       
     };
