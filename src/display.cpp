@@ -269,7 +269,13 @@ if(enabledAlarm == true){
     alarmTriggered = true;              // Set alarm trigger flag
     Serial.println("Alarm triggered!"); //    tone(buzzerPin, 2000); // Play a tone on the buzzer
 
-    // Display current time in 12-hour format or alarm triggered message
+
+  }
+  else{
+    alarmTriggered = false; 
+  }
+
+      // Display current time in 12-hour format or alarm triggered message
     if (alarmTriggered == true)
     {
       Serial.println("Alarm triggered!");
@@ -282,7 +288,6 @@ if(enabledAlarm == true){
 
       // toggleAlarm();
     }
-  }
 }
   // } else {
   //   Serial.print(now.year(), DEC);
@@ -548,15 +553,15 @@ void alarmPlay()
   myDFPlayer.loop(currentTune);
   // Paint_Clear(WHITE);
   //  Paint_Clear(BLACK);
-  Serial.println("Clearing Screen----------------------------------------++++++++++++++++++++++++++++++");
-  Paint_DrawString_EN(
-      100,
-      300,
-      "Wake Up",
-      &Font80,
-      WHITE,
-      BLACK);
-  EPD_5IN83_V2_Display(BlackImage);
+  // Serial.println("Clearing Screen----------------------------------------++++++++++++++++++++++++++++++");
+  // Paint_DrawString_EN(
+  //     100,
+  //     300,
+  //     "Wake Up",
+  //     &Font80,
+  //     WHITE,
+  //     BLACK);
+  // EPD_5IN83_V2_Display(BlackImage);
 }
 
 void alarmStop()
@@ -568,9 +573,9 @@ void alarmStop()
   alarmStopFlag = true;
   alarmSnoozeFlag = false;
   myDFPlayer.stop();
-  Paint_ClearWindows(100, 300, 648, 430, BLACK);
-  Paint_ClearWindows(100, 300, 648, 430, WHITE);
-  EPD_5IN83_V2_Display(BlackImage);
+  // Paint_ClearWindows(100, 300, 648, 430, BLACK);
+  // Paint_ClearWindows(100, 300, 648, 430, WHITE);
+  // EPD_5IN83_V2_Display(BlackImage);
 }
 void alarmSnooze()
 {
@@ -618,7 +623,7 @@ void handleRightButton()
 {
   if (customButtonOne == false && customButtonTwo == true) {
   unsigned long currentTime = millis();
-  if (currentTime - lastButtonPress >= buttonHoldTime)
+  if (currentTime - lastButtonPress >= 20000)
   {
     // Button held, change value
     changeSceneBtn = true;

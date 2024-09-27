@@ -275,6 +275,7 @@
         .then(data => {
           document.getElementById('connectedNetwork').textContent = data.ssid;
           document.getElementById('ipAddress').textContent = data.ip;
+          checkBridgeConnection();
         })
         .catch(error => console.error('Error:', error));
     }
@@ -470,16 +471,14 @@
       .then(data => {
         if (data.includes("ConnectionFound")) {
           // Bridge is connected, show the main UI
-          document.getElementById('philipsHueSettings').classList.add('hidden');
-          document.getElementById('mainUI').classList.remove('hidden');
-          // fetchScenes();
+         bridgeConnected();
           console.log("Bridge already connected. Skipping connection flow.");
         } 
         else {
           // Bridge not connected, show the connection flow
           
-          document.getElementById('philipsHueSettings').classList.remove('hidden');
-          document.getElementById('mainUI').classList.add('hidden');
+          // document.getElementById('philipsHueSettings').classList.remove('hidden');
+          // document.getElementById('mainUI').classList.add('hidden');
           console.log("No bridge connected. Please connect.");
         }
       })
@@ -772,14 +771,15 @@
     }
 
     setInterval(showCurrentTime, 1000); // Update time every second
-
+    // setInterval(checkBridgeConnection, 1000);
     window.onload = function () {
       fetchSavedAlarm();
       fetchWiFiStatus();
+      checkBridgeConnection();
       scanNetworks();
       fetchCurrentDateTime();
       fetchSavedAlarm();
-      //checkBridgeConnection();
+      
       
     };
   </script>

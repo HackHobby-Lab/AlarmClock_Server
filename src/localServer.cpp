@@ -313,6 +313,7 @@ void previewSleepSound() {
 }
 
 void saveAPIandUsername(String bridgeIP, String username) {
+  Serial.println("Saved the credentials for Bridge");
   // Open Preferences with the name "hueSettings", for read and write
   preferences.begin("hueSettings", false);
 
@@ -321,7 +322,7 @@ void saveAPIandUsername(String bridgeIP, String username) {
   
   // Save the username in preferences
   preferences.putString("username", username);
-  preferences.putString("ipaddress", bridgeIP);
+  // preferences.putString("ipaddress", bridgeIP);
   
   // Close Preferences
   preferences.end();
@@ -330,7 +331,6 @@ void saveAPIandUsername(String bridgeIP, String username) {
 String loadUsername() {
   preferences.begin("hueSettings", true); // Open for read only
   String savedUsername = preferences.getString("username", "");
-  bridgeIP = preferences.getString("ipaddress", "");
   apiUsername = savedUsername;
   preferences.end();
   return savedUsername;
@@ -339,6 +339,7 @@ String loadUsername() {
 String loadBridgeIP() {
   preferences.begin("hueSettings", true); // Open for read only
   String savedBridgeIP = preferences.getString("bridgeip", "");
+  bridgeIP = savedBridgeIP;
   preferences.end();
   return savedBridgeIP;
 }
@@ -384,8 +385,9 @@ void checkBridgeConnection() {
   if (storedUsername.length() > 0) {
     server.send(200, "text/plain", "ConnectionFound");
     // Bridge is already connected, skip connection flow
-    Serial.println("Bridge already connected. Username: " + storedUsername);
-    // apiUsername = storedUsername;
+    Serial.println("Bridge already connected. Username: " + storedUsername + ", Ip: " + storedBridgeIP);
+    apiUsername = storedUsername;
+    bridgeIP = storedBridgeIP;
     
     server.send(200, "text/plain", "ConnectionFound");
     server.send(200, "text/plain", "Bridge already connected");
