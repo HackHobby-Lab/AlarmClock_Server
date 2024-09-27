@@ -466,28 +466,29 @@ let inFunction = false;
     }
     setInterval(fetchScenes, 30000);  // 30000ms = 30 seconds
 
-    function checkBridgeConnection() {
-      fetch('/checkBridgeConnection')
-      .then(response => response.text())
-      .then(data => {
-        if (data.includes("ConnectionFound")) {
-          // Bridge is connected, show the main UI
-         bridgeConnected();
-          console.log("Bridge already connected. Skipping connection flow.");
-        } 
-        else {
-          // Bridge not connected, show the connection flow
-          bridgeConnected();
-          // document.getElementById('philipsHueSettings').classList.remove('hidden');
-          // document.getElementById('mainUI').classList.add('hidden');
-          console.log("No bridge connected. Please connect.");
-        }
-      })
-      .catch(error => {
-        console.error("Error checking bridge connection:", error);
-      });
-    }
-    
+  async function checkBridgeConnection() {
+    document.getElementById('mainUI').classList.add('hidden');
+
+try {
+  const response = await fetch('/checkBridgeConnection');
+  const data = await response.text();
+
+  if (data.includes("ConnectionFound")) {
+    // Bridge is connected, show the main UI
+    bridgeConnected();
+    console.log("Bridge already connected. Skipping connection flow.");
+  } else {
+    // Bridge not connected, show the connection flow
+    document.getElementById('philipsHueSettings').classList.remove('hidden');
+    console.log("No bridge connected. Please connect.");
+  }
+} catch (error) {
+  console.error("Error checking bridge connection:", error);
+  document.getElementById('mainUI').classList.add('hidden');
+  document.getElementById('errorMessage').classList.remove('hidden'); // Assuming you have an error message element
+}
+}
+  
     function bridgeConnected() {
       if(inFunction == true){
         console.log('InFunction True');
@@ -817,6 +818,7 @@ async function fetchSavedScene() {
       scanNetworks();
       fetchCurrentDateTime();
       fetchSavedAlarm();
+      fetchScenes();
       //fetchSavedScene();
       
       

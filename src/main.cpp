@@ -5,11 +5,17 @@
 
 void setup_wifi() {
   delay(10);
-  setupPeripheral(); // only for testing
+ 
   // EEPROM.begin(512); // only for testing
   // rtc.begin(); // only for testing
   Serial.println();
-  preferences.begin("wifi", false); // REVISIT: Already initialized
+  //preferences.begin("wifi", false); // REVISIT: Already initialized
+  preferences.begin("ssid", false);
+  preferences.begin("pass", false);
+  String ssid = preferences.getString("ssid", "");
+  String password = preferences.getString("pass", "");
+  Serial.print("Reading SSIDfrom flash ");
+  Serial.println(ssid);
 
   int resetCount = preferences.getInt("resetCount", 0);
   resetCount++;
@@ -19,15 +25,12 @@ void setup_wifi() {
   if (resetCount >= resetThreshold) {
     Serial.println("Reset count threshold reached, clearing preferences.");
    preferences.clear();  
-   preferences.putInt("resetCount", 0); 
+  preferences.putInt("resetCount", 0); 
     delay(1000); 
     ESP.restart();
   }
 
-  String ssid = preferences.getString("ssid", "");
-  String password = preferences.getString("password", "");
-  Serial.print("Reading SSIDfrom flash ");
-  Serial.println(ssid);
+
   if (ssid != "") {
     // WiFi.config(local_IP, gateway, subnet); // Set static IP for STA mode
     WiFi.begin(ssid.c_str(), password.c_str());
@@ -67,8 +70,9 @@ void setup() {
     return;
   }
 
-  preferences.begin("wifi", false);
+  //preferences.begin("wifi", false);
   setup_wifi();
+   setupPeripheral(); // only for testing
 
   // REVISIT: ADD CHECKS WHEN TO START mDNS RESPONDER??
   // Start mDNS responder

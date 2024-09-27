@@ -322,13 +322,13 @@ void previewSleepSound() {
 void saveAPIandUsername(String bridgeIP, String username) {
   Serial.println("Saved the credentials for Bridge");
   // Open Preferences with the name "hueSettings", for read and write
-  preferences.begin("hueSettings", false);
+  preferences.begin("hue", false);
 
   // Save the ip in preferences
-  preferences.putString("bridgeip", bridgeIP);
+  preferences.putString("bIP", bridgeIP);
   
   // Save the username in preferences
-  preferences.putString("username", username);
+  preferences.putString("user", username);
   // preferences.putString("ipaddress", bridgeIP);
   
   // Close Preferences
@@ -336,16 +336,16 @@ void saveAPIandUsername(String bridgeIP, String username) {
 }
 
 String loadUsername() {
-  preferences.begin("hueSettings", true); // Open for read only
-  String savedUsername = preferences.getString("username", "");
+  preferences.begin("hue", true); // Open for read only
+  String savedUsername = preferences.getString("user", "");
   apiUsername = savedUsername;
   preferences.end();
   return savedUsername;
 }
 
 String loadBridgeIP() {
-  preferences.begin("hueSettings", true); // Open for read only
-  String savedBridgeIP = preferences.getString("bridgeip", "");
+  preferences.begin("hue", true); // Open for read only
+  String savedBridgeIP = preferences.getString("bIP", "");
   bridgeIP = savedBridgeIP;
   preferences.end();
   return savedBridgeIP;
@@ -358,12 +358,16 @@ void loadsavedScenes(){
   Serial.println(desiredSceneName);
    preferences.end();
 
-  preferences.begin("customScene", true);
-  customScene = preferences.getString("customScene", "");
+  preferences.begin("cScene", true);
+  customScene = preferences.getString("cScene", "");
    Serial.print("LOading Custom Scene Name: ");
   Serial.println(customScene);
   preferences.end();
-
+  
+  if (desiredSceneName.isEmpty() && customScene.isEmpty()) {
+    desiredSceneName = "Loading Scene";
+    customScene = "Loadinng Scene";
+  }
 
    // Send the saved scenes back as a response
   String response = "{\"desiredSceneName\": \"" + desiredSceneName + "\", \"customScene\": \"" + customScene + "\"}";
@@ -408,7 +412,7 @@ bool BridgeConnection(String bridgeIP, String apiUsername) {
 void checkBridgeConnection() {
   String storedUsername = loadUsername();
   String storedBridgeIP = loadBridgeIP();
-  loadsavedScenes();
+  // loadsavedScenes();
 
   if (storedUsername.length() > 0) {
     server.send(200, "text/plain", "ConnectionFound");
@@ -422,7 +426,7 @@ void checkBridgeConnection() {
     // fetchScenesAndSendToClient();
   } else {
     // No username found, proceed with connection flow
-    server.send(502, "text/plain", "No bridge connected Boy");
+    server.send(500, "text/plain", "No bridge connected Try to connect bridge");
   }
 }
 
@@ -557,11 +561,11 @@ void handleAddManually() {
 // Function to handle the disconnect request and remove the saved username
 void handleDisconnect() {
   // Open Preferences with the name "hueSettings", for read and write
-  preferences.begin("hueSettings", false);
+  preferences.begin("hue", false);
   
   // Remove the saved username by clearing the key
-  preferences.remove("username");
-  preferences.remove("bridgeip");
+  preferences.remove("user");
+  preferences.remove("bIP");
   
   // Close Preferences
   preferences.end();
@@ -871,8 +875,8 @@ void handleSaveSettings() {
     preferences.putString("desired", desiredSceneName);
     Serial.println(desiredSceneName);
     preferences.end();
-    preferences.begin("customScene", false);
-    preferences.putString("customScene", customScene);
+    preferences.begin("cScene", false);
+    preferences.putString("cScene", customScene);
     preferences.end();
     
     // Send success response
@@ -953,14 +957,14 @@ void startWebServer() {
 
   server.on("/disconnectWiFi", HTTP_POST, []() {
     server.send(200, "text/plain", "Disconnected from Wi-Fi. Restarting...");
-    
+     // Clear saved SSID and password
+    preferences.remove("ssid");
+    preferences.remove("pass");
     WiFi.disconnect();  // Disconnect from the current Wi-Fi network
     WiFi.mode(WIFI_AP); // Switch back to AP mode
     Serial.println("Disconnected from Wi-Fi. Switched to AP mode.");
     
-    // Clear saved SSID and password
-    preferences.remove("ssid");
-    preferences.remove("password");
+   
 
     delay(1000);  
     ESP.restart();  // Restart the ESP32
@@ -969,10 +973,12 @@ void startWebServer() {
   server.on("/setWiFi", HTTP_POST, []() {
     String newSSID = server.arg("ssid");
     String newPass = server.arg("pass");
+    Serial.println(newSSID);
+    Serial.println(newPass);
     preferences.begin("ssid", false);
     preferences.putString("ssid", newSSID);
-    preferences.begin("password", false);
-        preferences.putString("password", newPass);
+    preferences.begin("pass", false);
+    preferences.putString("pass", newPass);
     if (newSSID != "") {
       // WiFi.config(local_IP, gateway, subnet); // Set static IP for STA mode
       WiFi.begin(newSSID.c_str(), newPass.c_str());
@@ -990,8 +996,8 @@ void startWebServer() {
 
         // Save Wi-Fi credentials in preferences
         preferences.putInt("resetCount", 0); 
-        // preferences.putString("ssid", newSSID);
-        // preferences.putString("password", newPass);
+        preferences.putString("ssid", newSSID);
+        preferences.putString("pass", newPass);
 
         // Send STA mode IP to client
         String staIP = WiFi.localIP().toString();
