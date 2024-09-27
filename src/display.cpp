@@ -59,6 +59,14 @@ bool wifiConnected = false;
 bool changeSceneBtn = false;
 bool changeSceneBtnENC = false;
 
+unsigned long buttonHeldTime = 0;
+const unsigned long holdDuration = 2000; // 2 seconds hold time
+bool buttonPressed = false;
+
+bool encoderPressed = false;
+unsigned long encoderHeldTime = 0;
+int lastButtonEncoder = LOW;
+
 void setupPeripheral()
 {
   EEPROM.begin(EEPROM_SIZE);
@@ -177,6 +185,7 @@ void displayClock()
   {
     if (encoderValue > lastEncoderValue)
     {
+      digitalWrite(2, HIGH);
       if (settingMode > 0)
       {
         changeSettingValue(-1);
@@ -192,6 +201,7 @@ void displayClock()
     }
     else
     {
+       digitalWrite(2, LOW);
       if (settingMode > 0)
       {
         changeSettingValue(1);
@@ -207,28 +217,31 @@ void displayClock()
     }
   }
   lastEncoderValue = encoderValue;
-  if(customButtonOne == true && customButtonTwo == false){
-  int buttonState = digitalRead(encoderButtonPin);
-    if (buttonState == LOW && lastButtonState == HIGH)
-    {
-      unsigned long currentMillis = millis();
+ 
+     unsigned long currentMillis = millis();
+     if (digitalRead(encoderButtonPin) == LOW){
+      Serial.println("Encoder Button Pressed");
+      if(customButtonOne == true){
+      if(!encoderPressed){
+        encoderPressed = true;
+        lastButtonEncoder = currentMillis;
+      }
 
-      if (currentMillis - previousMillis >= 8000)
-      {
-        // Save the last time you updated the display
-        
+      if(currentMillis - lastButtonEncoder >= holdDuration){
         Serial.println("Changing scene on button Encoder");
         changeSceneBtnENC = true;
-        fadeInLight();
-        previousMillis = currentMillis;
+        customBtnScene();   
       }
-      else
-      {
-        changeSceneBtnENC = false;
-      }
-    }
-    lastButtonState = buttonState;
+     }
+     else{
+      encoderPressed = false;
+      changeSceneBtnENC = false;
+      lastButtonEncoder = currentMillis;
+
+     }
+     
   }
+  
   if (setTuneFlag)
   {
     int buttonState = digitalRead(encoderButtonPin);
@@ -281,12 +294,15 @@ if(enabledAlarm == true){
       Serial.println("Alarm triggered!");
       if (atAlarmTrigger == true && atAlarmStop == false)
       {
-        fadeInLight();
+        alarmTriggerScene();
       };
 
       alarmPlay();
 
       // toggleAlarm();
+    }
+    else{
+      alarmStop();
     }
 }
   // } else {
@@ -477,6 +493,7 @@ void toggleAlarm()
   }
 }
 
+
 void handleButtonPresses()
 {
   // Check for alarm button press
@@ -496,13 +513,34 @@ void handleButtonPresses()
     delay(200); // Debounce delay
   }
 
-  // Check for right button press
+  // Check for right button press 
+  unsigned long currentTime = millis();
   if (digitalRead(rightButtonPin) == HIGH)
   {
     Serial.println("right Button pressed");
 
     handleRightButton();
+    if (customButtonTwo == true) {
+    if (!buttonPressed) {
+          // Button pressed for the first time
+          buttonPressed = true;
+          lastButtonPress = currentTime; // Record the time when button is pressed
+        }
+
+     if (currentTime - lastButtonPress >= holdDuration) {
+      changeSceneBtn = true;
+      customBtnScene(); // Call your custom function
+      Serial.println("Changing scene on button right");
+    }
+  } else {
+    // Button is released, reset everything
+    buttonPressed = false;
+    changeSceneBtn = false;
+    lastButtonPress = currentTime; // Reset the lastButtonPress time
+  }
+
     delay(200); // Debounce delay
+
   }
 }
 
@@ -568,7 +606,7 @@ void alarmStop()
 {
   if (atAlarmTrigger == false && atAlarmStop == true)
   {
-    fadeInLight();
+    alarmTriggerScene();
   };
   alarmStopFlag = true;
   alarmSnoozeFlag = false;
@@ -621,22 +659,6 @@ void handleLeftButton()
 
 void handleRightButton()
 {
-  if (customButtonOne == false && customButtonTwo == true) {
-  unsigned long currentTime = millis();
-  if (currentTime - lastButtonPress >= 20000)
-  {
-    // Button held, change value
-    changeSceneBtn = true;
-    fadeInLight();
-    Serial.println("Changing scene on button right");
-  }
-  else
-  {
-    changeSceneBtn = false;
-  }
-  lastButtonPress = currentTime;
-  }
-
 
   if (alarmTriggered == true)
   {

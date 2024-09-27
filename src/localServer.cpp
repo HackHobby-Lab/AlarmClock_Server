@@ -32,24 +32,31 @@ String savedSettings;
 String bridgeIP;
 String apiUsername;
 String groupID;
-String groupIdNew;
+String alarmSceneGroup;
 String desiredSceneName;
+String customScene;
 String SceneID;
 String fadeInBefore;
+String SceneIDalarm;
+String sceneFound;
+
+String customSceneGroup;
+String SceneIDcustom;
+int fadeInTime;
+
 
 DynamicJsonDocument responseDoc(512); 
 JsonArray scenesArray;
 JsonArray idsArray;
 JsonArray groupArray;
 
-String SceneIDnew;
-String sceneFound;
+
 
 const int lightID_1 = 1; // Light ID for wakeup
 const int lightID_2 = 2; // Light ID for sleep
 
 unsigned long startAttemptTime = 0;
-const unsigned long wifiTimeout = 10000;  // 10 seconds timeout
+const unsigned long wifiTimeout = 20000;  // 10 seconds timeout
 
 void toggleLED() {
   ledState = !ledState;
@@ -344,6 +351,26 @@ String loadBridgeIP() {
   return savedBridgeIP;
 }
 
+void loadsavedScenes(){
+  preferences.begin("desired", true);
+  desiredSceneName = preferences.getString("desired", "");
+  Serial.print("LOading Desired Scene Name: ");
+  Serial.println(desiredSceneName);
+   preferences.end();
+
+  preferences.begin("customScene", true);
+  customScene = preferences.getString("customScene", "");
+   Serial.print("LOading Custom Scene Name: ");
+  Serial.println(customScene);
+  preferences.end();
+
+
+   // Send the saved scenes back as a response
+  String response = "{\"desiredSceneName\": \"" + desiredSceneName + "\", \"customScene\": \"" + customScene + "\"}";
+  Serial.println(response);
+  server.send(200, "application/json", response);
+}
+
 bool BridgeConnection(String bridgeIP, String apiUsername) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
@@ -381,6 +408,7 @@ bool BridgeConnection(String bridgeIP, String apiUsername) {
 void checkBridgeConnection() {
   String storedUsername = loadUsername();
   String storedBridgeIP = loadBridgeIP();
+  loadsavedScenes();
 
   if (storedUsername.length() > 0) {
     server.send(200, "text/plain", "ConnectionFound");
@@ -683,15 +711,30 @@ Serial.println(docScene.memoryUsage());
 
           // Check if the current scene name matches the desired scene name
           if (sceneNames == desiredSceneName) {
-              SceneIDnew = idsArray[i].as<String>();  // Get the corresponding scene ID
-              groupIdNew = groupArray[i].as<String>();
+              SceneIDalarm = idsArray[i].as<String>();  // Get the corresponding scene ID
+              alarmSceneGroup = groupArray[i].as<String>();
               sceneFound = true;
 
               // Print the found scene ID
               Serial.print("Found Scene ID: ");
-              Serial.print(SceneIDnew);
+              Serial.print(SceneIDalarm);
               Serial.print(", Found the Group Id: ");
-              Serial.println(groupIdNew);
+              Serial.println(alarmSceneGroup);
+             
+              //return;  // Exit once found
+          }
+
+
+          if (sceneNames == customScene) {
+              SceneIDcustom = idsArray[i].as<String>();  // Get the corresponding scene ID
+              customSceneGroup = groupArray[i].as<String>();
+              sceneFound = true;
+
+              // Print the found scene ID
+              Serial.print("Found Custom Scene ID: ");
+              Serial.print(SceneIDcustom);
+              Serial.print(", Found custom Group Id: ");
+              Serial.println(customSceneGroup);
              
               //return;  // Exit once found
           }
@@ -717,12 +760,12 @@ Serial.println(docScene.memoryUsage());
 }
 
 
-void fadeInLight() {
+void alarmTriggerScene() {
   Serial.println("Fading Light");
   HTTPClient http;
-  String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/groups/" + String(groupIdNew) +"/action";
+  String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/groups/" + String(alarmSceneGroup) +"/action";
    Serial.println(SceneID);
-  String payload = "{\"scene\": \""  + String(SceneIDnew) + "\", \"transitiontime\":" + String(fadeInBefore) + "}";
+  String payload = "{\"scene\": \""  + String(SceneIDalarm) + "\", \"transitiontime\":" + String(fadeInBefore) + "}";
   Serial.println("Sending Payload: " + payload);
 
   http.begin(url);
@@ -739,6 +782,27 @@ void fadeInLight() {
   http.end();
 }
 
+void customBtnScene() {
+  Serial.println("Fading Light");
+  HTTPClient http;
+  String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/groups/" + String(customSceneGroup) +"/action";
+   Serial.println(SceneID);
+  String payload = "{\"scene\": \""  + String(SceneIDcustom) + "\", \"transitiontime\":" + String(fadeInTime) + "}";
+  Serial.println("Sending Payload: " + payload);
+
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+
+  int httpResponseCode = http.PUT(payload);
+  if (httpResponseCode > 0) {
+    String responseStatus = http.getString();
+    Serial.println(responseStatus);
+  } else {
+    Serial.println("Error on sending PUT request");
+  }
+
+  http.end();
+}
 
 // Function to handle saving settings
 void handleSaveSettings() {
@@ -758,9 +822,12 @@ void handleSaveSettings() {
     desiredSceneName = doc["wakeUpScene"].as<String>();
     fadeInBefore = doc["fadeInBefore"].as<String>();
     String customButton = doc["customButton"].as<String>();
-    String customScene = doc["customScene"].as<String>();
+    String customButton2 = doc["customButton2"].as<String>();
+    customScene = doc["customScene"].as<String>();
     String trigger = doc["trigger"].as<String>();
-    int fadeInTime = doc["fadeInTime"];
+    fadeInTime = doc["fadeInTime"];
+
+    
 
     if (trigger == "alarmTime") {
         Serial.println("Trigger is set to: When Alarm Start");
@@ -778,15 +845,18 @@ void handleSaveSettings() {
     if (customButton == "button1"){
       Serial.println("button1 Pressed");
       customButtonOne = true;
-      customButtonTwo = false;
-      desiredSceneName = customScene;
+      
 
     }
-    else if (customButton == "button2"){
-      Serial.println("button2 Pressed");
+    else{
       customButtonOne = false;
+    }
+    if (customButton2 == "button2"){
+      Serial.println("button2 Pressed");
       customButtonTwo = true;
-      desiredSceneName = customScene; 
+    }
+    else{
+      customButtonTwo = false;
     }
 
     // Example: Save these settings in a global variable or EEPROM
@@ -797,6 +867,13 @@ void handleSaveSettings() {
     //fadeInLight() ;
     Serial.println(savedSettings);
     Serial.println(trigger);
+    preferences.begin("desired", false);
+    preferences.putString("desired", desiredSceneName);
+    Serial.println(desiredSceneName);
+    preferences.end();
+    preferences.begin("customScene", false);
+    preferences.putString("customScene", customScene);
+    preferences.end();
     
     // Send success response
     server.send(200, "text/plain", "Settings saved successfully");
@@ -892,6 +969,10 @@ void startWebServer() {
   server.on("/setWiFi", HTTP_POST, []() {
     String newSSID = server.arg("ssid");
     String newPass = server.arg("pass");
+    preferences.begin("ssid", false);
+    preferences.putString("ssid", newSSID);
+    preferences.begin("password", false);
+        preferences.putString("password", newPass);
     if (newSSID != "") {
       // WiFi.config(local_IP, gateway, subnet); // Set static IP for STA mode
       WiFi.begin(newSSID.c_str(), newPass.c_str());
@@ -909,8 +990,8 @@ void startWebServer() {
 
         // Save Wi-Fi credentials in preferences
         preferences.putInt("resetCount", 0); 
-        preferences.putString("ssid", newSSID);
-        preferences.putString("password", newPass);
+        // preferences.putString("ssid", newSSID);
+        // preferences.putString("password", newPass);
 
         // Send STA mode IP to client
         String staIP = WiFi.localIP().toString();
@@ -952,6 +1033,7 @@ void startWebServer() {
   // server.on("/toggleLED", HTTP_GET, toggleLED);
   server.on("/checkBridgeConnection", HTTP_GET, checkBridgeConnection);
   server.on("/disconnectBridge", HTTP_POST, handleDisconnect);
+  server.on("/getSavedScene",HTTP_POST, loadsavedScenes);
 
   server.begin();
   Serial.println("HTTP server started");

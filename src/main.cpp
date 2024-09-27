@@ -13,20 +13,21 @@ void setup_wifi() {
 
   int resetCount = preferences.getInt("resetCount", 0);
   resetCount++;
-  preferences.putInt("resetCount", resetCount);
+ preferences.putInt("resetCount", resetCount);
   Serial.printf("Reset count: %d\n", resetCount);
 
   if (resetCount >= resetThreshold) {
     Serial.println("Reset count threshold reached, clearing preferences.");
-    preferences.clear();  
-    preferences.putInt("resetCount", 0); 
+   preferences.clear();  
+   preferences.putInt("resetCount", 0); 
     delay(1000); 
     ESP.restart();
   }
 
   String ssid = preferences.getString("ssid", "");
   String password = preferences.getString("password", "");
-
+  Serial.print("Reading SSIDfrom flash ");
+  Serial.println(ssid);
   if (ssid != "") {
     // WiFi.config(local_IP, gateway, subnet); // Set static IP for STA mode
     WiFi.begin(ssid.c_str(), password.c_str());
