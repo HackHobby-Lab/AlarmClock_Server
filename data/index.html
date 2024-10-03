@@ -552,7 +552,7 @@ console.log('False');
           }
       }
       const customScene = document.getElementById('customScene').value;
-      const fadeInTime = document.getElementById('fadeInTime').value;
+      //const fadeInTime = document.getElementById('fadeInTime').value;
 
       // Create a settings object
       const settings = {
@@ -562,7 +562,7 @@ console.log('False');
         customButton,
         customButton2,
         customScene,
-        fadeInTime,
+       // fadeInTime,
       };
 
       // Send settings to the server
@@ -584,6 +584,87 @@ console.log('False');
       });
     }
 
+    async function fetchCustomButton() {
+    try {
+      const response = await fetch('/getSavedStatus', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to Fetch the status of custom buttons');
+      }
+
+      const data = await response.json();  // Parse JSON response
+      console.log(data);
+
+      const customButtonOne = document.querySelector('input[name="customButton"]');
+      const customButtonTwo = document.querySelector('input[name="customButton2"]');
+
+      // Update the UI based on the fetched data
+      if (data.customButtonOne == '0') {
+        document.getElementById('button1').checked = false;
+        console.log("Custom Button One");
+      }
+      else {
+        document.getElementById('button1').checked = true;
+      }
+
+      if (data.customButtonTwo == '0') {
+        document.getElementById('button2').checked = false;
+        console.log("Custom Button TWO");
+      }
+      else {
+        document.getElementById('button2').checked = true;
+      }
+
+      // if (data.customButtonTwo !== undefined) {
+      //   customButtonTwo.checked = data.customButtonTwo;
+      //   console.log("Custom Button Two");
+      // }
+
+    } catch (error) {
+      console.error('Error:', error.message);
+    }
+}
+
+
+async function getFadeTime() {
+  try {
+    const response = await fetch('/getFadeTime', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch the status of custom buttons');
+    }
+
+    const data = await response.json();
+    console.log(data);
+
+    // Assuming 'fadeInBefore' is part of the JSON data
+    const fadeTimeValue = data.fadeInBefore;
+
+    const dropdown = document.getElementById('fadeInBefore');
+    
+    // Check if the value is in the dropdown and set it
+    if (dropdown.querySelector(`option[value="${fadeTimeValue}"]`)) {
+      dropdown.value = fadeTimeValue;
+    } else {
+      console.warn('Unexpected fade time value:', fadeTimeValue);
+    }
+
+  } catch (error) {
+    console.error('Error:', error.message);
+  }
+}
+
+
     function resetSettings() {
       fetch('/resetSettings', {
         method: 'POST'
@@ -601,7 +682,7 @@ console.log('False');
           document.getElementById('alarmOff').checked = false;
 
           // Reset fade start slider
-          document.getElementById('fadeInBefore').value = 30;
+          document.getElementById('fadeInBefore').value = 0;
 
           // Reset custom buttons radio
           document.getElementById('button1').checked = false;
@@ -611,7 +692,7 @@ console.log('False');
           document.getElementById('customScene').value = 'None Selected';
 
           // Reset fade-in slider
-          document.getElementById('fadeInTime').value = 30;
+         // document.getElementById('fadeInTime').value = 30;
         })
         .catch(error => {
           console.error('Error:', error);
@@ -667,6 +748,8 @@ console.log('False');
 
 
 async function fetchSavedScene() {
+  fetchCustomButton();
+  getFadeTime();
   const response = await fetch('/getSavedScene', {
     method: 'POST',
     headers: {
@@ -682,6 +765,7 @@ async function fetchSavedScene() {
   console.log(data);
   return data; // Return the desired scene name
 }
+
 
 
 
@@ -819,6 +903,8 @@ async function fetchSavedScene() {
       fetchCurrentDateTime();
       fetchSavedAlarm();
       fetchScenes();
+      fetchCustomButton();
+      getFadeTime();
       //fetchSavedScene();
       
       
@@ -1018,10 +1104,17 @@ async function fetchSavedScene() {
     </div>
 
     <!-- Fade-in control before alarm -->
+    <!-- Fade-in control before alarm -->
     <div>
-        <label for="fadeInBefore">Start fade in before</label>
-        <input type="range" id="fadeInBefore" min="0" max="60" value="30">
+      <label for="fadeInBefore">Start fade in before:</label>
+      <select id="fadeInBefore">
+        <option value="0">No Fade</option>
+        <option value="5">5 minutes</option>
+        <option value="10">10 minutes</option>
+        <option value="20">20 minutes</option>
+      </select>
     </div>
+
 
     <!-- Custom buttons -->
     <div>
@@ -1042,10 +1135,10 @@ async function fetchSavedScene() {
     </div>
 
     <!-- Fade-in time -->
-    <div>
+    <!-- <div>
         <label for="fadeInTime">Fade in for</label>
         <input type="range" id="fadeInTime" min="0" max="60" value="30">
-    </div>
+    </div> -->
 
     <!-- Reset and Save Settings Buttons -->
     <button onclick="saveSettings()">Save Settings</button>

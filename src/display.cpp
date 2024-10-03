@@ -67,6 +67,8 @@ bool encoderPressed = false;
 unsigned long encoderHeldTime = 0;
 int lastButtonEncoder = LOW;
 
+ bool sceneTriggered = false;  
+
 void setupPeripheral()
 {
   EEPROM.begin(EEPROM_SIZE);
@@ -218,29 +220,32 @@ void displayClock()
   }
   lastEncoderValue = encoderValue;
  
-     unsigned long currentMillis = millis();
-     if (digitalRead(encoderButtonPin) == LOW){
+  unsigned long currentMillis = millis();
+
+  if (digitalRead(encoderButtonPin) == LOW) {
+    if (!encoderPressed) {
       Serial.println("Encoder Button Pressed");
-      if(customButtonOne == true){
-      if(!encoderPressed){
-        encoderPressed = true;
-        lastButtonEncoder = currentMillis;
-      }
+      encoderPressed = true;
+      lastButtonEncoder = currentMillis;  // Record the time when the button is first pressed
+    }
 
-      if(currentMillis - lastButtonEncoder >= holdDuration){
-        Serial.println("Changing scene on button Encoder");
-        changeSceneBtnENC = true;
-        customBtnScene();   
-      }
-     }
-     else{
-      encoderPressed = false;
-      changeSceneBtnENC = false;
-      lastButtonEncoder = currentMillis;
+    // Check if customButtonOne is true and the button has been held long enough
+    if (customButtonOne == true && currentMillis - lastButtonEncoder >= holdDuration) {
+      Serial.println("Changing scene on button Encoder");
+      changeSceneBtnENC = true;
+      customBtnScene();  // Call your custom function
+    }
 
-     }
-     
+  } else {
+    // Button is released, reset variables
+    if (encoderPressed) {
+      Serial.println("Encoder Button Released");
+    }
+    encoderPressed = false;
+    changeSceneBtnENC = false;
+    lastButtonEncoder = currentMillis;  // Reset the lastButtonEncoder time
   }
+
   
   if (setTuneFlag)
   {
@@ -288,14 +293,24 @@ if(enabledAlarm == true){
     alarmTriggered = false; 
   }
 
+   
+
+    if (now.hour() == AlarmHH && now.minute() == AlarmMM - fadeInBefore.toInt()) {
+      if (!sceneTriggered && atAlarmTrigger == true && atAlarmStop == false) {
+        Serial.println("Sending Scene Trigger");
+        alarmTriggerScene();
+        sceneTriggered = true;  // Set the flag to true after the scene is triggered
+      }
+    } else {
+      // Reset the flag once the time moves past the alarm time
+      sceneTriggered = false;
+    }
+
+
       // Display current time in 12-hour format or alarm triggered message
     if (alarmTriggered == true)
     {
       Serial.println("Alarm triggered!");
-      if (atAlarmTrigger == true && atAlarmStop == false)
-      {
-        alarmTriggerScene();
-      };
 
       alarmPlay();
 
@@ -513,35 +528,34 @@ void handleButtonPresses()
     delay(200); // Debounce delay
   }
 
-  // Check for right button press 
   unsigned long currentTime = millis();
-  if (digitalRead(rightButtonPin) == HIGH)
-  {
+if (digitalRead(rightButtonPin) == HIGH) {
+  if (!buttonPressed) {
     Serial.println("right Button pressed");
-
-    handleRightButton();
-    if (customButtonTwo == true) {
-    if (!buttonPressed) {
-          // Button pressed for the first time
-          buttonPressed = true;
-          lastButtonPress = currentTime; // Record the time when button is pressed
-        }
-
-     if (currentTime - lastButtonPress >= holdDuration) {
-      changeSceneBtn = true;
-      customBtnScene(); // Call your custom function
-      Serial.println("Changing scene on button right");
-    }
-  } else {
-    // Button is released, reset everything
-    buttonPressed = false;
-    changeSceneBtn = false;
-    lastButtonPress = currentTime; // Reset the lastButtonPress time
+    buttonPressed = true;
+    lastButtonPress = currentTime;  // Record the time when the button is pressed
   }
 
-    delay(200); // Debounce delay
-
+  // Check if customButtonTwo is true and the button has been held long enough
+  if (customButtonTwo == true && currentTime - lastButtonPress >= holdDuration) {
+    changeSceneBtn = true;
+    customBtnScene(); // Call your custom function
+    Serial.println("Changing scene on button right");
   }
+
+} else {
+  // Button is released, reset variables
+  if (buttonPressed) {
+    Serial.println("right Button released");
+  }
+  buttonPressed = false;
+  changeSceneBtn = false;
+  lastButtonPress = currentTime;  // Reset the lastButtonPress time
+}
+
+// Optional debounce delay
+delay(200);
+
 }
 
 void handleAlarmButton()

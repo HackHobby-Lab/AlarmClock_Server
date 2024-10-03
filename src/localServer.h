@@ -36,6 +36,8 @@ extern bool enabledAlarm;
 extern bool customButtonOne;
 extern bool customButtonTwo;
 
+extern String fadeInBefore;
+
 void toggleLED();
 void startWebServer();
 void startAPMode(); 

@@ -375,6 +375,29 @@ void loadsavedScenes(){
   server.send(200, "application/json", response);
 }
 
+void loadCustomButton (){
+    preferences.begin("cBtn1", true);
+   customButtonOne =  preferences.getBool("cBtn1", "");
+    preferences.end();
+    preferences.begin("cBtn2", true);
+    customButtonTwo = preferences.getBool("cBtn2", "");
+    preferences.end();
+    String response = "{\"customButtonOne\": \"" + String(customButtonOne) + "\", \"customButtonTwo\": \"" + String(customButtonTwo) + "\"}";
+    Serial.println(response);
+    server.send(200, "application/json", response);
+}
+
+void loadFadeTime (){
+     preferences.begin("fdTime", true);
+    fadeInBefore = preferences.getString("fdTime", "");
+    preferences.end();
+
+    String response = "{\"fadeInBefore\": \"" + fadeInBefore + "\"}";
+    Serial.println(response);
+    server.send(200, "application/json", response);
+
+}
+
 bool BridgeConnection(String bridgeIP, String apiUsername) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
@@ -424,6 +447,7 @@ void checkBridgeConnection() {
     server.send(200, "text/plain", "ConnectionFound");
     server.send(200, "text/plain", "Bridge already connected");
     // fetchScenesAndSendToClient();
+    loadCustomButton();
   } else {
     // No username found, proceed with connection flow
     server.send(500, "text/plain", "No bridge connected Try to connect bridge");
@@ -791,7 +815,7 @@ void customBtnScene() {
   HTTPClient http;
   String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/groups/" + String(customSceneGroup) +"/action";
    Serial.println(SceneID);
-  String payload = "{\"scene\": \""  + String(SceneIDcustom) + "\", \"transitiontime\":" + String(fadeInTime) + "}";
+  String payload = "{\"scene\": \""  + String(SceneIDcustom) + "\", \"transitiontime\":" + String(1) + "}";
   Serial.println("Sending Payload: " + payload);
 
   http.begin(url);
@@ -829,7 +853,7 @@ void handleSaveSettings() {
     String customButton2 = doc["customButton2"].as<String>();
     customScene = doc["customScene"].as<String>();
     String trigger = doc["trigger"].as<String>();
-    fadeInTime = doc["fadeInTime"];
+   // fadeInTime = doc["fadeInTime"];
 
     
 
@@ -878,7 +902,16 @@ void handleSaveSettings() {
     preferences.begin("cScene", false);
     preferences.putString("cScene", customScene);
     preferences.end();
-    
+    preferences.begin("cBtn1", false);
+    preferences.putBool("cBtn1", customButtonOne);
+    preferences.end();
+    preferences.begin("cBtn2", false);
+    preferences.putBool("cBtn2", customButtonTwo);
+    preferences.end();
+    preferences.begin("fdTime", false);
+    preferences.putString("fdTime", fadeInBefore);
+    preferences.end();
+
     // Send success response
     server.send(200, "text/plain", "Settings saved successfully");
   } else {
@@ -1040,6 +1073,8 @@ void startWebServer() {
   server.on("/checkBridgeConnection", HTTP_GET, checkBridgeConnection);
   server.on("/disconnectBridge", HTTP_POST, handleDisconnect);
   server.on("/getSavedScene",HTTP_POST, loadsavedScenes);
+  server.on("/getSavedStatus", HTTP_POST, loadCustomButton);
+  server.on("/getFadeTime", HTTP_POST, loadFadeTime);
 
   server.begin();
   Serial.println("HTTP server started");
