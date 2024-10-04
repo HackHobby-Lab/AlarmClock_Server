@@ -187,7 +187,7 @@ void displayClock()
   {
     if (encoderValue > lastEncoderValue)
     {
-      digitalWrite(2, HIGH);
+      turnOnLED();
       if (settingMode > 0)
       {
         changeSettingValue(-1);
@@ -203,7 +203,7 @@ void displayClock()
     }
     else
     {
-       digitalWrite(2, LOW);
+       turnOffLED();
       if (settingMode > 0)
       {
         changeSettingValue(1);

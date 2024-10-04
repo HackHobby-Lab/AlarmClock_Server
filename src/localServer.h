@@ -39,6 +39,8 @@ extern bool customButtonTwo;
 extern String fadeInBefore;
 
 void toggleLED();
+void turnOnLED();
+void turnOffLED();
 void startWebServer();
 void startAPMode(); 
 void fetchScenesAndSendToClient();

@@ -40,9 +40,12 @@ String fadeInBefore;
 String SceneIDalarm;
 String sceneFound;
 
+long int transTime;
+
 String customSceneGroup;
 String SceneIDcustom;
 int fadeInTime;
+
 
 
 DynamicJsonDocument responseDoc(512); 
@@ -64,6 +67,24 @@ void toggleLED() {
   analogWrite(ledPin, ledState ? 255 : 0);
   Serial.println(ledState ? "LED is ON" : "LED is OFF");
   server.send(200, "text/plain", ledState ? "LED is ON" : "LED is OFF");
+}
+
+void turnOnLED() {
+  if (!ledState) {  // Only turn on if it's currently off
+    ledState = HIGH;
+    digitalWrite(ledPin, HIGH);
+    analogWrite(ledPin, 255);
+    Serial.println("LED is ON");
+  }
+}
+
+void turnOffLED() {
+  if (ledState) {  // Only turn off if it's currently on
+    ledState = LOW;
+    digitalWrite(ledPin, LOW);
+    analogWrite(ledPin, 0);
+    Serial.println("LED is OFF");
+  }
 }
 
 void setBrightness() {
@@ -793,7 +814,7 @@ void alarmTriggerScene() {
   HTTPClient http;
   String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/groups/" + String(alarmSceneGroup) +"/action";
    Serial.println(SceneID);
-  String payload = "{\"scene\": \""  + String(SceneIDalarm) + "\", \"transitiontime\":" + String(fadeInBefore) + "}";
+  String payload = "{\"scene\": \""  + String(SceneIDalarm) + "\", \"transitiontime\":" + String(transTime) + "}";
   Serial.println("Sending Payload: " + payload);
 
   http.begin(url);
@@ -815,7 +836,7 @@ void customBtnScene() {
   HTTPClient http;
   String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/groups/" + String(customSceneGroup) +"/action";
    Serial.println(SceneID);
-  String payload = "{\"scene\": \""  + String(SceneIDcustom) + "\", \"transitiontime\":" + String(1) + "}";
+  String payload = "{\"scene\": \""  + String(SceneIDcustom) + "\", \"transitiontime\":" + String(5) + "}";
   Serial.println("Sending Payload: " + payload);
 
   http.begin(url);
@@ -854,7 +875,7 @@ void handleSaveSettings() {
     customScene = doc["customScene"].as<String>();
     String trigger = doc["trigger"].as<String>();
    // fadeInTime = doc["fadeInTime"];
-
+    transTime = fadeInBefore.toInt() * 60000;
     
 
     if (trigger == "alarmTime") {
