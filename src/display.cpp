@@ -48,7 +48,7 @@ int settingMode = 0;
 int settingValue = 0;
 int timeSetting = 0;
 unsigned long lastButtonPress = 0;
-const unsigned long buttonHoldTime = 800;
+const unsigned long buttonHoldTime = 400;
 long snoozeTime = 5 * 1000;
 bool alarmStopFlag = false;
 bool alarmSnoozeFlag = false;
@@ -230,7 +230,7 @@ void displayClock()
     }
 
     // Check if customButtonOne is true and the button has been held long enough
-    if (customButtonOne == true && currentMillis - lastButtonEncoder >= holdDuration) {
+    if (customButtonOne == true && currentMillis - lastButtonEncoder >= buttonHoldTime) {
       Serial.println("Changing scene on button Encoder");
       changeSceneBtnENC = true;
       customBtnScene();  // Call your custom function
@@ -535,9 +535,17 @@ if (digitalRead(rightButtonPin) == HIGH) {
     buttonPressed = true;
     lastButtonPress = currentTime;  // Record the time when the button is pressed
   }
+    if (alarmTriggered == true)
+  {
+    Serial.println("It's first if in alarm stop");  
+    
+      alarmStop();
+      // eraseEEPROM();
+      alarmTriggered == false;
+  }
 
   // Check if customButtonTwo is true and the button has been held long enough
-  if (customButtonTwo == true && currentTime - lastButtonPress >= holdDuration) {
+  if (customButtonTwo == true && currentTime - lastButtonPress >= buttonHoldTime) {
     changeSceneBtn = true;
     customBtnScene2(); // Call your custom function
     Serial.println("Changing scene on button right");
@@ -580,20 +588,6 @@ void handleAlarmButton()
   }
 
   lastButtonPress = currentTime;
-
-  if (alarmTriggered == true)
-  {
-    if ((currentTime - lastButtonPress) >= 800)
-    {
-
-      Serial.println("Alarm deactivated.");
-      // noTone(buzzerPin); // Stop the buzzer tone
-      alarmTriggered = false; // Reset the alarm trigger flag
-      alarmStop();
-      //eraseEEPROM();
-    }
-    lastButtonPress = currentTime;
-  }
 }
 
 void alarmPlay()
