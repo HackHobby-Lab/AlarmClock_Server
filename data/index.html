@@ -552,6 +552,7 @@ console.log('False');
           }
       }
       const customScene = document.getElementById('customScene').value;
+      const customSceneBt2 = document.getElementById('customSceneBt2').value;
       //const fadeInTime = document.getElementById('fadeInTime').value;
 
       // Create a settings object
@@ -562,6 +563,7 @@ console.log('False');
         customButton,
         customButton2,
         customScene,
+        customSceneBt2,
        // fadeInTime,
       };
 
@@ -690,6 +692,7 @@ async function getFadeTime() {
 
           // Reset custom scene selection
           document.getElementById('customScene').value = 'None Selected';
+          document.getElementById('customSceneBt2').value = 'None Selected'
 
           // Reset fade-in slider
          // document.getElementById('fadeInTime').value = 30;
@@ -701,49 +704,67 @@ async function getFadeTime() {
     }
 
     async function fetchScenes() {
-  console.log("In Scene function on JS side");
-  try {
-    const response = await fetch('/fetchScenes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-    });
+      console.log("In Scene function on JS side");
+      try {
+        const response = await fetch('/fetchScenes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain',
+          },
+        });
 
-    const data = await response.json().catch(() => ({}));
-    const scenes = data.scenes || [];
-    console.log("Scenes Fetched:", scenes);
+        const data = await response.json().catch(() => ({}));
+        const scenes = data.scenes || [];
+        console.log("Scenes Fetched:", scenes);
 
-    const ScenesSelect = document.getElementById('wakeUpScene');
-    const customSceneSelect = document.getElementById('customScene');
+        const ScenesSelect = document.getElementById('wakeUpScene');
+        const customSceneSelect = document.getElementById('customScene');
+        const customSceneBt2Select = document.getElementById('customSceneBt2');
 
-    // Clear existing options
-    ScenesSelect.innerHTML = '';
-    customSceneSelect.innerHTML = '';
+        // Clear existing options
+        ScenesSelect.innerHTML = '';
+        customSceneSelect.innerHTML = '';
+        customSceneBt2Select.innerHTML = '';
 
-    // Populate the dropdowns with the fetched scenes
-    scenes.forEach(scene => {
-      const option = document.createElement('option');
-      option.value = scene;
-      option.textContent = scene;
+        // Populate the dropdowns with the fetched scenes
+        scenes.forEach(scene => {
+          const option = document.createElement('option');
+          option.value = scene;
+          option.textContent = scene;
 
-      ScenesSelect.appendChild(option.cloneNode(true));
-      customSceneSelect.appendChild(option);
-    });
+          ScenesSelect.appendChild(option.cloneNode(true));
+          customSceneSelect.appendChild(option.cloneNode(true));
+          customSceneBt2Select.appendChild(option);
+        });
 
-    // After populating, set saved selections if available
-    const savedScenes = await fetchSavedScene();
-    console.log(savedScenes);
-    if (savedScenes) {
-      ScenesSelect.value = savedScenes.desiredSceneName; // Set selected value for wakeUpScene
-      customSceneSelect.value = savedScenes.customScene; // Set selected value for customScene
-    }
+        // After populating, set saved selections if available
+        const savedScenes = await fetchSavedScene().catch(error => {
+          console.error("Error fetching saved scenes:", error);
+          return null; // Return null in case of error
+        });
 
-    console.log("Scenes updated in dropdowns.");
-    
-  } catch (error) {
-    console.error('Error fetching scenes:', error);
-  }
+        if (savedScenes) {
+          // Set selected value for wakeUpScene if it exists in the fetched scenes
+          if (scenes.includes(savedScenes.desiredSceneName)) {
+            ScenesSelect.value = savedScenes.desiredSceneName;
+          }
+
+          // Set selected value for customScene if it exists in the fetched scenes
+          if (scenes.includes(savedScenes.customScene)) {
+            customSceneSelect.value = savedScenes.customScene;
+          }
+
+          // Set selected value for customSceneBt2 if it exists in the fetched scenes
+          if (scenes.includes(savedScenes.customSceneBt2)) {
+            customSceneBt2Select.value = savedScenes.customSceneBt2;
+          }
+        }
+
+        console.log("Scenes updated in dropdowns.");
+        
+      } catch (error) {
+        console.error('Error fetching scenes:', error);
+      }
 }
 
 
@@ -1128,11 +1149,19 @@ async function fetchSavedScene() {
 
     <!-- Scene to activate for custom buttons -->
     <div>
-        <label for="customScene">Scene to activate</label>
+        <label for="customScene">Scene on Button 1</label>
         <select id="customScene">
           <option value="Loading Scenes">Loading Scenes</option>
       </select>
     </div>
+
+     <!-- Scene to activate for custom buttons -->
+     <div>
+      <label for="customSceneBt2">Scene on Button 2</label>
+      <select id="customSceneBt2">
+        <option value="Loading Scenes">Loading Scenes</option>
+    </select>
+  </div>
 
     <!-- Fade-in time -->
     <!-- <div>

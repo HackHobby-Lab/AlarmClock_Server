@@ -46,4 +46,5 @@ void startAPMode();
 void fetchScenesAndSendToClient();
 extern void alarmTriggerScene();
 extern void customBtnScene();
+extern void customBtnScene2();
 #endif // LOCALSERVER

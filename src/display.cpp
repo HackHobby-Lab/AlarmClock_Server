@@ -539,7 +539,7 @@ if (digitalRead(rightButtonPin) == HIGH) {
   // Check if customButtonTwo is true and the button has been held long enough
   if (customButtonTwo == true && currentTime - lastButtonPress >= holdDuration) {
     changeSceneBtn = true;
-    customBtnScene(); // Call your custom function
+    customBtnScene2(); // Call your custom function
     Serial.println("Changing scene on button right");
   }
 

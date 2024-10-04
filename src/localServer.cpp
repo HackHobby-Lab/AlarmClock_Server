@@ -35,6 +35,7 @@ String groupID;
 String alarmSceneGroup;
 String desiredSceneName;
 String customScene;
+String customSceneBt2;
 String SceneID;
 String fadeInBefore;
 String SceneIDalarm;
@@ -44,6 +45,8 @@ long int transTime;
 
 String customSceneGroup;
 String SceneIDcustom;
+String SceneIDcustomBtn2;
+String customSceneBt2Group;
 int fadeInTime;
 
 
@@ -384,14 +387,21 @@ void loadsavedScenes(){
    Serial.print("LOading Custom Scene Name: ");
   Serial.println(customScene);
   preferences.end();
+
+  preferences.begin("cSBt2", true);
+  customSceneBt2 = preferences.getString("cSBt2", "");
+   Serial.print("LOading Custom Scene Name: ");
+  Serial.println(customSceneBt2);
+  preferences.end();
   
-  if (desiredSceneName.isEmpty() && customScene.isEmpty()) {
+    if (desiredSceneName.isEmpty() && customScene.isEmpty() && customSceneBt2.isEmpty()) {
     desiredSceneName = "Loading Scene";
     customScene = "Loadinng Scene";
+    customSceneBt2 = "Loading Scene";
   }
 
    // Send the saved scenes back as a response
-  String response = "{\"desiredSceneName\": \"" + desiredSceneName + "\", \"customScene\": \"" + customScene + "\"}";
+  String response = "{\"desiredSceneName\": \"" + desiredSceneName + "\", \"customScene\": \"" + customScene + "\", \"customSceneBt2\": \"" + customSceneBt2 + "\"}";
   Serial.println(response);
   server.send(200, "application/json", response);
 }
@@ -787,6 +797,21 @@ Serial.println(docScene.memoryUsage());
              
               //return;  // Exit once found
           }
+
+
+          if (sceneNames == customSceneBt2) {
+              SceneIDcustomBtn2 = idsArray[i].as<String>();  // Get the corresponding scene ID
+              customSceneBt2Group = groupArray[i].as<String>();
+              sceneFound = true;
+
+              // Print the found scene ID
+              Serial.print("Found Custom Scene ID: ");
+              Serial.print(SceneIDcustomBtn2);
+              Serial.print(", Found custom Group Id: ");
+              Serial.println(customSceneBt2Group);
+             
+              //return;  // Exit once found
+          }
       }
     } else {
       Serial.println("Failed to connect to Hue Bridge. HTTP error code: " + String(httpCode));
@@ -853,6 +878,29 @@ void customBtnScene() {
   http.end();
 }
 
+
+void customBtnScene2() {
+  Serial.println("Fading Light");
+  HTTPClient http;
+  String url = "http://" + String(bridgeIP) + "/api/" + String(apiUsername) + "/groups/" + String(customSceneBt2Group) +"/action";
+   Serial.println(SceneID);
+  String payload = "{\"scene\": \""  + String(SceneIDcustomBtn2) + "\", \"transitiontime\":" + String(5) + "}";
+  Serial.println("Sending Payload: " + payload);
+
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+
+  int httpResponseCode = http.PUT(payload);
+  if (httpResponseCode > 0) {
+    String responseStatus = http.getString();
+    Serial.println(responseStatus);
+  } else {
+    Serial.println("Error on sending PUT request");
+  }
+
+  http.end();
+}
+
 // Function to handle saving settings
 void handleSaveSettings() {
   if (server.hasArg("plain")) {
@@ -873,6 +921,7 @@ void handleSaveSettings() {
     String customButton = doc["customButton"].as<String>();
     String customButton2 = doc["customButton2"].as<String>();
     customScene = doc["customScene"].as<String>();
+    customSceneBt2 = doc["customSceneBt2"].as<String>();
     String trigger = doc["trigger"].as<String>();
    // fadeInTime = doc["fadeInTime"];
     transTime = fadeInBefore.toInt() * 60000;
@@ -922,6 +971,9 @@ void handleSaveSettings() {
     preferences.end();
     preferences.begin("cScene", false);
     preferences.putString("cScene", customScene);
+    preferences.end();
+    preferences.begin("cSBt2", false);
+    preferences.putString("cSBt2", customSceneBt2);
     preferences.end();
     preferences.begin("cBtn1", false);
     preferences.putBool("cBtn1", customButtonOne);
