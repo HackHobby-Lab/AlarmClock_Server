@@ -632,6 +632,49 @@ console.log('False');
     }
 }
 
+  async function loadTrigger() {
+    try {
+      const response = await fetch('/loadSceneTrigger', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to Fetch the status of custom buttons');
+      }
+
+      const data = await response.json();  // Parse JSON response
+      console.log(data);
+
+      const atAlarmTrigger = document.querySelector('input[name="atAlarmTrigger"]');
+      const atAlarmStop = document.querySelector('input[name="atAlarmStop"]');
+
+      // Update the UI based on the fetched data
+      if (data.atAlarmTrigger == '1') {
+        document.getElementById('alarmTime').checked = true;
+        console.log("Alarmtime");
+      }
+      else {
+        document.getElementById('alarmTime').checked = false;
+      }
+
+      if (data.atAlarmStop == '1') {
+        document.getElementById('alarmOff').checked = true;
+        console.log("Alarmoff");
+      }
+      else {
+        document.getElementById('alarmOff').checked = false;
+      }
+      
+          
+    
+    } catch (error) {
+      console.error('Error:', error.message);
+    }
+    
+  }
 
 async function getFadeTime() {
   try {
@@ -771,6 +814,7 @@ async function getFadeTime() {
 async function fetchSavedScene() {
   fetchCustomButton();
   getFadeTime();
+  loadTrigger();
   const response = await fetch('/getSavedScene', {
     method: 'POST',
     headers: {
@@ -926,6 +970,7 @@ async function fetchSavedScene() {
       fetchScenes();
       fetchCustomButton();
       getFadeTime();
+      loadTrigger();
       //fetchSavedScene();
       
       

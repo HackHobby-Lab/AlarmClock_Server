@@ -590,7 +590,7 @@ void handleAlarmButton()
       // noTone(buzzerPin); // Stop the buzzer tone
       alarmTriggered = false; // Reset the alarm trigger flag
       alarmStop();
-      eraseEEPROM();
+      //eraseEEPROM();
     }
     lastButtonPress = currentTime;
   }
@@ -681,7 +681,7 @@ void handleRightButton()
     if (currentTime - lastButtonPress >= buttonHoldTime)
     {
       alarmStop();
-      eraseEEPROM();
+      // eraseEEPROM();
       alarmTriggered == false;
     }
     lastButtonPress = currentTime;

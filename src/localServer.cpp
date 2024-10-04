@@ -418,6 +418,20 @@ void loadCustomButton (){
     server.send(200, "application/json", response);
 }
 
+void loadSceneTrigger(){
+  preferences.begin("atAlarm", true);
+  atAlarmTrigger = preferences.getBool("atAlarm", "");
+  preferences.end();
+
+  preferences.begin("atStop", true);
+  atAlarmStop = preferences.getBool("atStop", "");
+  preferences.end();
+
+   String response = "{\"atAlarmTrigger\": \"" + String(atAlarmTrigger) + "\", \"atAlarmStop\": \"" + String(atAlarmStop) + "\"}";
+    Serial.println(response);
+    server.send(200, "application/json", response);
+}
+
 void loadFadeTime (){
      preferences.begin("fdTime", true);
     fadeInBefore = preferences.getString("fdTime", "");
@@ -924,20 +938,25 @@ void handleSaveSettings() {
     customSceneBt2 = doc["customSceneBt2"].as<String>();
     String trigger = doc["trigger"].as<String>();
    // fadeInTime = doc["fadeInTime"];
-    transTime = fadeInBefore.toInt() * 60000;
+    transTime = fadeInBefore.toInt() * 60 * 10;
     
 
     if (trigger == "alarmTime") {
         Serial.println("Trigger is set to: When Alarm Start");
         atAlarmTrigger = true;
-        atAlarmStop = false;
         // Perform action for when the alarm starts
-      } else if (trigger == "alarmOff") {
-        atAlarmStop = true;
+      } 
+      else {
         atAlarmTrigger = false;
+      }
+      if (trigger == "alarmOff") {
+        atAlarmStop = true;
         Serial.println("Trigger is set to: When Alarm Stop");
 
         // Perform action for when the alarm stops
+      }
+      else{
+        atAlarmStop = false;
       }
 
     if (customButton == "button1"){
@@ -984,7 +1003,13 @@ void handleSaveSettings() {
     preferences.begin("fdTime", false);
     preferences.putString("fdTime", fadeInBefore);
     preferences.end();
+        preferences.begin("atAlarm", false);
+        preferences.putBool("atAlarm", atAlarmTrigger);
+        preferences.end();
 
+                preferences.begin("atStop", false);
+        preferences.putBool("atStop", atAlarmStop);
+        preferences.end();
     // Send success response
     server.send(200, "text/plain", "Settings saved successfully");
   } else {
@@ -1148,6 +1173,7 @@ void startWebServer() {
   server.on("/getSavedScene",HTTP_POST, loadsavedScenes);
   server.on("/getSavedStatus", HTTP_POST, loadCustomButton);
   server.on("/getFadeTime", HTTP_POST, loadFadeTime);
+  server.on("/loadSceneTrigger", HTTP_POST, loadSceneTrigger);
 
   server.begin();
   Serial.println("HTTP server started");
